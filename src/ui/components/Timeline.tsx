@@ -5,8 +5,9 @@ import { useProjectStore } from '../../store/useProjectStore';
 import { TimelineHeader } from './TimelineHeader';
 import { TimelineBody } from './TimelineBody';
 import { TodayLine } from './TodayLine';
+import { LinkingLine } from './LinkingLine';
 import { ZoomToggle } from './ZoomToggle';
-import { ZOOM_CONFIGS, HEADER_HEIGHT, VISIBLE_DAYS } from '../constants';
+import { ZOOM_CONFIGS, HEADER_HEIGHT, getVisibleDays } from '../constants';
 
 function useTodayIndex(): number {
   const [today, setToday] = useState(() => todayDayIndex());
@@ -48,13 +49,33 @@ export function Timeline() {
 
   const today = useTodayIndex();
 
+  // Measure container width for dynamic visible-days calculation
+  const [containerWidth, setContainerWidth] = useState(1920);
+  useEffect(() => {
+    if (scrollRef.current) {
+      setContainerWidth(scrollRef.current.clientWidth);
+    }
+    const handleResize = () => {
+      if (scrollRef.current) {
+        setContainerWidth(scrollRef.current.clientWidth);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const visibleDays = useMemo(
+    () => getVisibleDays(zoomLevel, containerWidth),
+    [zoomLevel, containerWidth]
+  );
+
   // Generate columns based on zoom level
   const columns = useMemo((): TimelineColumn[] => {
     if (zoomLevel === 'day') {
-      const halfRange = Math.floor(VISIBLE_DAYS / 2);
+      const halfRange = Math.floor(visibleDays / 2);
       const startDayIndex = today - halfRange;
       const cols: TimelineColumn[] = [];
-      for (let i = 0; i < VISIBLE_DAYS; i++) {
+      for (let i = 0; i < visibleDays; i++) {
         const dayIndex = startDayIndex + i;
         const date = dayIndexToDate(dayIndex);
         cols.push({
@@ -68,8 +89,7 @@ export function Timeline() {
       }
       return cols;
     } else if (zoomLevel === 'week') {
-      // ~ same time range but in week columns
-      const halfRange = Math.floor(VISIBLE_DAYS / 2);
+      const halfRange = Math.floor(visibleDays / 2);
       const startDate = startOfWeek(dayIndexToDate(today - halfRange), { weekStartsOn: 1 });
       const endDate = endOfWeek(dayIndexToDate(today + halfRange), { weekStartsOn: 1 });
       const totalDays = differenceInCalendarDays(endDate, startDate) + 1;
@@ -91,9 +111,9 @@ export function Timeline() {
       return cols;
     } else {
       // Month
-      const halfRange = Math.floor(VISIBLE_DAYS / 2);
-      const startDate = startOfMonth(dayIndexToDate(today - halfRange * 3));
-      const endDate = endOfMonth(dayIndexToDate(today + halfRange * 3));
+      const halfRange = Math.floor(visibleDays / 2);
+      const startDate = startOfMonth(dayIndexToDate(today - halfRange));
+      const endDate = endOfMonth(dayIndexToDate(today + halfRange));
       const cols: TimelineColumn[] = [];
       let d = startDate;
       while (d <= endDate) {
@@ -112,7 +132,7 @@ export function Timeline() {
       }
       return cols;
     }
-  }, [today, zoomLevel]);
+  }, [today, zoomLevel, visibleDays]);
 
   // For day mode, rangeStartDayIndex is first column's dayIndex.
   // For week/month, same — the first column's dayIndex is the start.
@@ -198,6 +218,9 @@ export function Timeline() {
 
             {/* Today line */}
             <TodayLine dayToPixel={dayToPixel} />
+
+            {/* Linking drag line */}
+            <LinkingLine dayToPixel={dayToPixel} scrollContainer={scrollRef.current} />
           </div>
         </div>
       </div>

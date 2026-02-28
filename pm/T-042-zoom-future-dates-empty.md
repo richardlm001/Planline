@@ -1,6 +1,6 @@
 # T-042 — Zoom Level Change Leaves Future Dates Empty
 
-**Status:** Backlog
+**Status:** Done
 **Size:** S
 **Category:** Bug
 
@@ -38,3 +38,11 @@ The likely root cause is the `VISIBLE_DAYS = 90` constant, which limits column g
 - At all zoom levels, the timeline grid fills the viewport with no blank/empty areas for future dates.
 - Column generation adapts to the zoom level and viewport size.
 - Header labels, grid lines, and shading render for the full visible range.
+
+## Changelog
+
+- Replaced fixed `VISIBLE_DAYS = 90` with `getVisibleDays(zoomLevel, viewportWidth)` in `src/ui/constants.ts`.
+- `Timeline.tsx` now measures container width via `useState` + `resize` listener and passes it to `getVisibleDays`.
+- For week zoom, the function computes enough days to fill the viewport (e.g., 1920px / (40/7) ≈ 336 days); for month zoom, it similarly scales.
+- Removed the `halfRange * 3` hack for month zoom since the dynamic calculation now handles it.
+- All 118 tests pass.

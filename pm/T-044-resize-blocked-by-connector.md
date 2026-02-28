@@ -1,6 +1,6 @@
 # T-044 — Right-Edge Resize Blocked by Connector Dot
 
-**Status:** Backlog
+**Status:** Done
 **Size:** S
 **Category:** Bug
 
@@ -55,3 +55,9 @@ Separate the two interactions spatially and/or by trigger:
 - Users can resize task bars by dragging the right edge without the connector interfering.
 - Dependency creation via the right connector still works.
 - Both cursors (`col-resize` for resize, `crosshair` for connector) appear in the correct zones.
+
+## Changelog
+
+- Moved right output connector from `-right-2` to `-right-3.5` in `TaskBar.tsx` so it sits further outside the bar, no longer overlapping the resize handle.
+- Increased `RESIZE_HANDLE_WIDTH` from 6px to 8px for easier targeting.
+- All 118 tests pass.

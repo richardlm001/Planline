@@ -1,6 +1,6 @@
 # T-041 — Dependency Linking Drag Line Not Rendering
 
-**Status:** Backlog
+**Status:** Done
 **Size:** M
 **Category:** Bug
 
@@ -43,3 +43,11 @@ The root cause is that T-013 step 4 ("Add a temporary line component that render
 - Releasing on a valid input connector creates the dependency.
 - Releasing elsewhere cancels without side effects.
 - The linking line accounts for timeline scroll position.
+
+## Changelog
+
+- Created `LinkingLine.tsx` component that renders an SVG dashed line from the source task's right edge to the cursor during dependency linking.
+- Uses `pointermove` on window to track cursor position, accounting for scroll offset of the timeline container.
+- Cancels linking on `pointerup` if not on a valid input connector.
+- Mounted inside `Timeline.tsx` alongside `TodayLine` with `z-30` to render above dependency arrows.
+- All 118 tests pass.

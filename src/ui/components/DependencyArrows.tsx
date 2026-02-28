@@ -97,6 +97,31 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
   const barCenterY = (rowIndex: number) =>
     rowIndex * ROW_HEIGHT + barVerticalPadding + BAR_HEIGHT / 2;
 
+  /**
+   * Build a rounded-corner Z-shaped path from (sx, sy) to (tx, ty) via a midX elbow.
+   * When sy === ty (same row), draws a straight horizontal line.
+   */
+  const buildArrowPath = (sx: number, sy: number, tx: number, ty: number): string => {
+    const midX = sx + 12;
+    // Same row — straight line
+    if (sy === ty) {
+      return `M ${sx} ${sy} L ${tx} ${ty}`;
+    }
+    const dy = ty - sy;
+    const absDy = Math.abs(dy);
+    const dirY = dy > 0 ? 1 : -1;
+    // Corner radius, clamped to avoid overshooting
+    const r = Math.min(10, absDy / 2, Math.abs(midX - sx) / 2, Math.abs(tx - midX) / 2);
+    return [
+      `M ${sx} ${sy}`,
+      `L ${midX - r} ${sy}`,
+      `Q ${midX} ${sy} ${midX} ${sy + r * dirY}`,
+      `L ${midX} ${ty - r * dirY}`,
+      `Q ${midX} ${ty} ${midX + r} ${ty}`,
+      `L ${tx} ${ty}`,
+    ].join(' ');
+  };
+
   const arrows = dependencies.map((dep) => {
     const fromTask = taskMap.get(dep.fromTaskId);
     const toTask = taskMap.get(dep.toTaskId);
@@ -115,13 +140,12 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
       const tx = dayToPixel(toStart);
       const ty = barCenterY(toRow);
 
-      const midX = sx + 12;
-      const path = `M ${sx} ${sy} L ${midX} ${sy} L ${midX} ${ty} L ${tx} ${ty}`;
+      const arrowPath = buildArrowPath(sx, sy, tx, ty);
 
       return (
         <g key={dep.id}>
           <path
-            d={path}
+            d={arrowPath}
             fill="none"
             stroke="#9CA3AF"
             strokeWidth={1.5}
@@ -153,13 +177,12 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
     const tx = dayToPixel(toStart);
     const ty = barCenterY(effectiveToRow);
 
-    const midX = sx + 12;
-    const path = `M ${sx} ${sy} L ${midX} ${sy} L ${midX} ${ty} L ${tx} ${ty}`;
+    const arrowPath = buildArrowPath(sx, sy, tx, ty);
 
     return (
       <g key={dep.id} data-testid={`dep-arrow-collapsed-${dep.id}`}>
         <path
-          d={path}
+          d={arrowPath}
           fill="none"
           stroke="#9CA3AF"
           strokeWidth={1.5}

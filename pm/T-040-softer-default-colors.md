@@ -1,6 +1,6 @@
 # T-040 — Softer Default Color Palette
 
-**Status:** Backlog
+**Status:** Done
 **Size:** S
 
 ## Goal
@@ -69,3 +69,9 @@ export const COLOR_PALETTE = [
 - Task bars and color picker both reflect the new palette.
 - Text labels remain readable on all bar colors.
 - All existing tests pass.
+
+## Changelog
+
+- Replaced all 10 `COLOR_PALETTE` entries in `src/domain/constants.ts` with softer pastel-toned hexes.
+- Tests use `COLOR_PALETTE[n]` references and pass without changes since they don't hardcode specific hex values against the palette.
+- All 118 tests pass.

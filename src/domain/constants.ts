@@ -18,18 +18,18 @@ export function todayDayIndex(): number {
   return dateToDayIndex(new Date());
 }
 
-/** Curated color palette for task bars */
+/** Curated color palette for task bars (soft/pastel tones) */
 export const COLOR_PALETTE = [
-  '#3B82F6', // blue
-  '#10B981', // emerald
-  '#F59E0B', // amber
-  '#EF4444', // red
-  '#8B5CF6', // violet
-  '#EC4899', // pink
-  '#06B6D4', // cyan
-  '#F97316', // orange
-  '#14B8A6', // teal
-  '#6366F1', // indigo
+  '#93B5F7', // soft blue
+  '#7DD3B6', // soft emerald
+  '#FCD077', // soft amber
+  '#F9A8A8', // soft coral
+  '#BFA8F7', // soft violet
+  '#F4A8CC', // soft pink
+  '#7DD8E8', // soft cyan
+  '#FCBB7D', // soft orange
+  '#7DD3C4', // soft teal
+  '#A5A7F5', // soft indigo
 ];
 
 /** Default values for new entities */

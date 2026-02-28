@@ -15,7 +15,7 @@ interface TaskBarProps {
 
 export const BAR_HEIGHT = 28;
 const BAR_VERTICAL_PADDING = (ROW_HEIGHT - BAR_HEIGHT) / 2;
-const RESIZE_HANDLE_WIDTH = 6;
+const RESIZE_HANDLE_WIDTH = 8;
 
 export const TaskBar = memo(function TaskBar({
   task,
@@ -203,7 +203,7 @@ export const TaskBar = memo(function TaskBar({
 
       {/* Right connector (output) */}
       <div
-        className="absolute -right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white bg-blue-500 z-20 cursor-crosshair opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white bg-blue-500 z-20 cursor-crosshair opacity-0 group-hover:opacity-100 transition-opacity"
         onPointerDown={handleOutputConnectorDown}
         data-testid={`connector-out-${task.id}`}
       />

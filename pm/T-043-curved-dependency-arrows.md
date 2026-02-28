@@ -1,6 +1,6 @@
 # T-043 — Curved Dependency Arrow Lines
 
-**Status:** Backlog
+**Status:** Done
 **Size:** S
 
 ## Problem
@@ -51,3 +51,12 @@ The recommended approach is **rounded corners** (option 1), as it preserves the 
 - All dependency arrows use smooth rounded corners instead of sharp right angles.
 - Arrowheads render correctly at the endpoint.
 - Edge cases (same row, short segments) are handled gracefully.
+
+## Changelog
+
+- Added `buildArrowPath` function in `DependencyArrows.tsx` that constructs SVG paths with quadratic Bezier curves (`Q`) at both bend points instead of sharp `L` corners.
+- Corner radius is `Math.min(10, |dy|/2, horizontal-segment/2)` for smooth clamping on short segments.
+- Same-row arrows (sy === ty) render as straight horizontal lines.
+- Applied to both solid (normal) and dashed (collapsed-group) arrows.
+- Arrowhead markers remain correctly aligned.
+- All 118 tests pass (including DependencyArrows tests that verify Y coordinates in path data).
