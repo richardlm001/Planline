@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, memo } from 'react';
 import type { Task } from '../../domain/types';
 import { useProjectStore } from '../../store/useProjectStore';
 import { ROW_HEIGHT } from '../constants';
@@ -17,7 +17,7 @@ export const BAR_HEIGHT = 28;
 const BAR_VERTICAL_PADDING = (ROW_HEIGHT - BAR_HEIGHT) / 2;
 const RESIZE_HANDLE_WIDTH = 6;
 
-export function TaskBar({
+export const TaskBar = memo(function TaskBar({
   task,
   computedStart,
   rowIndex,
@@ -26,7 +26,8 @@ export function TaskBar({
 }: TaskBarProps) {
   const updateTask = useProjectStore((s) => s.updateTask);
   const selectTask = useProjectStore((s) => s.selectTask);
-  const selectedTaskId = useProjectStore((s) => s.selectedTaskId);
+  const isSelected = useProjectStore((s) => s.selectedTaskId === task.id);
+  const isLinking = useProjectStore((s) => s.linkingFromTaskId !== null);
   const linkingFromTaskId = useProjectStore((s) => s.linkingFromTaskId);
   const setLinkingFromTaskId = useProjectStore((s) => s.setLinkingFromTaskId);
   const addDependency = useProjectStore((s) => s.addDependency);
@@ -39,7 +40,6 @@ export function TaskBar({
   const dragStartX = useRef(0);
   const originalStart = useRef(computedStart);
 
-  const isSelected = selectedTaskId === task.id;
   const effectiveStart = computedStart + (isDragging ? Math.round(dragOffset / pixelsPerDay) : 0);
 
   // Compute display values accounting for resize
@@ -89,7 +89,7 @@ export function TaskBar({
       setIsDragging(false);
       setDragOffset(0);
       if (daysDelta !== 0) {
-        const newStart = task.startDayIndex + daysDelta;
+        const newStart = computedStart + daysDelta;
         updateTask(task.id, { startDayIndex: newStart });
       }
     }
@@ -152,8 +152,6 @@ export function TaskBar({
     }
   }, [linkingFromTaskId, task.id, addDependency, setLinkingFromTaskId]);
 
-  const isLinking = linkingFromTaskId !== null;
-
   return (
     <div
       className={`absolute rounded-md shadow-sm border flex items-center text-xs text-white font-medium select-none group ${
@@ -211,4 +209,4 @@ export function TaskBar({
       />
     </div>
   );
-}
+});

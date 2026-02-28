@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { HEADER_HEIGHT } from '../constants';
 import { useProjectStore } from '../../store/useProjectStore';
 import { SidebarTaskRow } from './SidebarTaskRow';
@@ -15,19 +15,28 @@ export function Sidebar() {
   const selectTask = useProjectStore((s) => s.selectTask);
   const setEditingTaskId = useProjectStore((s) => s.setEditingTaskId);
 
-  const sortedTasks = [...tasks].sort((a, b) => a.sortOrder - b.sortOrder);
-  const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
+  const sortedTasks = useMemo(
+    () => [...tasks].sort((a, b) => a.sortOrder - b.sortOrder),
+    [tasks]
+  );
+  const sortedGroups = useMemo(
+    () => [...groups].sort((a, b) => a.sortOrder - b.sortOrder),
+    [groups]
+  );
 
   // Split tasks into ungrouped and grouped
-  const ungroupedTasks = sortedTasks.filter((t) => !t.groupId);
-  const groupedTasks = new Map<string, typeof sortedTasks>();
-  for (const t of sortedTasks) {
-    if (t.groupId) {
-      const arr = groupedTasks.get(t.groupId) ?? [];
-      arr.push(t);
-      groupedTasks.set(t.groupId, arr);
+  const { ungroupedTasks, groupedTasks } = useMemo(() => {
+    const ungrouped = sortedTasks.filter((t) => !t.groupId);
+    const grouped = new Map<string, typeof sortedTasks>();
+    for (const t of sortedTasks) {
+      if (t.groupId) {
+        const arr = grouped.get(t.groupId) ?? [];
+        arr.push(t);
+        grouped.set(t.groupId, arr);
+      }
     }
-  }
+    return { ungroupedTasks: ungrouped, groupedTasks: grouped };
+  }, [sortedTasks]);
 
   const handleAddTask = useCallback(async () => {
     const task = await addTask();

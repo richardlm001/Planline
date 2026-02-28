@@ -27,14 +27,54 @@ describe('Export / Import', () => {
       dependencies: [],
       groups: [],
     };
-    expect(validateImportData(data)).toBe(true);
+    const result = validateImportData(data);
+    expect(result.valid).toBe(true);
   });
 
   it('validateImportData rejects invalid data', () => {
-    expect(validateImportData(null)).toBe(false);
-    expect(validateImportData({})).toBe(false);
-    expect(validateImportData({ tasks: [], dependencies: [], groups: [] })).toBe(false);
-    expect(validateImportData({ project: { id: 'x' }, tasks: [] })).toBe(false);
+    expect(validateImportData(null).valid).toBe(false);
+    expect(validateImportData({}).valid).toBe(false);
+    expect(validateImportData({ version: 1, tasks: [], dependencies: [], groups: [] }).valid).toBe(false);
+    expect(validateImportData({ version: 1, project: { id: 'x' }, tasks: [] }).valid).toBe(false);
+  });
+
+  it('validateImportData rejects invalid task fields', () => {
+    const data = {
+      version: 1,
+      project: { id: 'p1', name: 'Test', epoch: '2024-01-01' },
+      tasks: [{ id: 't1', name: 'A' }], // missing startDayIndex, durationDays, etc.
+      dependencies: [],
+      groups: [],
+    };
+    const result = validateImportData(data);
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.error).toContain('startDayIndex');
+  });
+
+  it('validateImportData rejects dependencies referencing non-existent tasks', () => {
+    const data = {
+      version: 1,
+      project: { id: 'p1', name: 'Test', epoch: '2024-01-01' },
+      tasks: [{ id: 't1', name: 'A', startDayIndex: 0, durationDays: 2, color: '#3B82F6', sortOrder: 0 }],
+      dependencies: [{ id: 'd1', fromTaskId: 't1', toTaskId: 'nonexistent' }],
+      groups: [],
+    };
+    const result = validateImportData(data);
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.error).toContain('non-existent task');
+  });
+
+  it('validateImportData rejects zero durationDays', () => {
+    const data = {
+      version: 1,
+      project: { id: 'p1', name: 'Test', epoch: '2024-01-01' },
+      tasks: [{ id: 't1', name: 'A', startDayIndex: 0, durationDays: 0, color: '#3B82F6', sortOrder: 0 }],
+      dependencies: [],
+      groups: [],
+    };
+    const result = validateImportData(data);
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.error).toContain('positive');
   });
 
   it('importProject round-trips correctly', async () => {

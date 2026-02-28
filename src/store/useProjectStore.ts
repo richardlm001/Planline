@@ -121,13 +121,24 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   updateTask: async (id: string, partial: Partial<Task>) => {
     const state = get();
     const newTasks = state.tasks.map((t) => (t.id === id ? { ...t, ...partial } : t));
-    const schedule = runScheduler(newTasks, state.dependencies);
 
-    set({
-      tasks: newTasks,
-      ...schedule,
-      lastSavedAt: new Date(),
-    });
+    // Only run the scheduler when scheduling-relevant fields change
+    const schedulingFields: (keyof Task)[] = ['startDayIndex', 'durationDays'];
+    const needsReschedule = schedulingFields.some((f) => f in partial);
+
+    if (needsReschedule) {
+      const schedule = runScheduler(newTasks, state.dependencies);
+      set({
+        tasks: newTasks,
+        ...schedule,
+        lastSavedAt: new Date(),
+      });
+    } else {
+      set({
+        tasks: newTasks,
+        lastSavedAt: new Date(),
+      });
+    }
 
     const updated = newTasks.find((t) => t.id === id);
     if (updated) await repo.saveTask(updated);
@@ -155,6 +166,20 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
   addDependency: async (fromTaskId: string, toTaskId: string) => {
     const state = get();
+
+    // Prevent self-dependency
+    if (fromTaskId === toTaskId) {
+      return { ok: false, error: 'Cannot create self-dependency' };
+    }
+
+    // Prevent duplicate
+    const exists = state.dependencies.some(
+      (d) => d.fromTaskId === fromTaskId && d.toTaskId === toTaskId
+    );
+    if (exists) {
+      return { ok: false, error: 'Dependency already exists' };
+    }
+
     const dep: Dependency = { id: nanoid(), fromTaskId, toTaskId };
     const newDeps = [...state.dependencies, dep];
 
@@ -237,13 +262,23 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   removeGroup: async (id: string) => {
     const state = get();
     const newGroups = state.groups.filter((g) => g.id !== id);
+    const newTasks = state.tasks.map((t) =>
+      t.groupId === id ? { ...t, groupId: undefined } : t
+    );
 
     set({
       groups: newGroups,
+      tasks: newTasks,
       lastSavedAt: new Date(),
     });
 
     await repo.deleteGroup(id);
+    for (const t of newTasks.filter((t) => !t.groupId)) {
+      const original = state.tasks.find((o) => o.id === t.id);
+      if (original?.groupId === id) {
+        await repo.saveTask(t);
+      }
+    }
   },
 
   selectTask: (id: string | null) => {

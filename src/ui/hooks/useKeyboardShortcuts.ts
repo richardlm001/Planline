@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 
 export function useKeyboardShortcuts() {
@@ -11,7 +11,10 @@ export function useKeyboardShortcuts() {
   const addDependency = useProjectStore((s) => s.addDependency);
   const setEditingTaskId = useProjectStore((s) => s.setEditingTaskId);
 
-  const sortedTasks = [...tasks].sort((a, b) => a.sortOrder - b.sortOrder);
+  const sortedTasks = useMemo(
+    () => [...tasks].sort((a, b) => a.sortOrder - b.sortOrder),
+    [tasks]
+  );
 
   const handleKeyDown = useCallback(
     async (e: KeyboardEvent) => {
@@ -71,12 +74,18 @@ export function useKeyboardShortcuts() {
 
       if (e.key === 'Enter') {
         e.preventDefault();
-        // Insert after selected task if one is selected
+        // Insert after selected task with midpoint sortOrder
         const selectedIdx = selectedTaskId
           ? sortedTasks.findIndex((t) => t.id === selectedTaskId)
           : -1;
-        const insertSortOrder =
-          selectedIdx >= 0 ? sortedTasks[selectedIdx].sortOrder + 0.5 : undefined;
+        let insertSortOrder: number | undefined;
+        if (selectedIdx >= 0) {
+          const currentOrder = sortedTasks[selectedIdx].sortOrder;
+          const nextOrder = selectedIdx < sortedTasks.length - 1
+            ? sortedTasks[selectedIdx + 1].sortOrder
+            : currentOrder + 1;
+          insertSortOrder = (currentOrder + nextOrder) / 2;
+        }
 
         const newTask = await addTask(
           insertSortOrder !== undefined ? { sortOrder: insertSortOrder } : undefined
@@ -95,9 +104,16 @@ export function useKeyboardShortcuts() {
             const parentStart = computedStarts.get(selectedTaskId) ?? selectedTask.startDayIndex;
             const childStart = parentStart + selectedTask.durationDays;
 
+            const selectedIdx = sortedTasks.findIndex((t) => t.id === selectedTaskId);
+            const currentOrder = selectedTask.sortOrder;
+            const nextOrder = selectedIdx < sortedTasks.length - 1
+              ? sortedTasks[selectedIdx + 1].sortOrder
+              : currentOrder + 1;
+            const insertSortOrder = (currentOrder + nextOrder) / 2;
+
             const newTask = await addTask({
               startDayIndex: childStart,
-              sortOrder: selectedTask.sortOrder + 0.5,
+              sortOrder: insertSortOrder,
             });
             await addDependency(selectedTaskId, newTask.id);
             selectTask(newTask.id);

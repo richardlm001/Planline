@@ -1,3 +1,4 @@
+import { useMemo, useId } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { ROW_HEIGHT } from '../constants';
 import { BAR_HEIGHT } from './TaskBar';
@@ -14,14 +15,27 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
   const groups = useProjectStore((s) => s.groups);
   const dependencies = useProjectStore((s) => s.dependencies);
   const computedStarts = useProjectStore((s) => s.computedStarts);
+  const markerId = useId();
 
-  const collapsedGroupIds = new Set(groups.filter((g) => g.collapsed).map((g) => g.id));
-  const sortedTasks = [...tasks]
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .filter((t) => !t.groupId || !collapsedGroupIds.has(t.groupId));
-  const taskIndexMap = new Map<string, number>();
-  const taskMap = new Map(tasks.map((t) => [t.id, t]));
-  sortedTasks.forEach((t, i) => taskIndexMap.set(t.id, i));
+  const collapsedGroupIds = useMemo(
+    () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
+    [groups]
+  );
+  const sortedTasks = useMemo(
+    () => [...tasks]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .filter((t) => !t.groupId || !collapsedGroupIds.has(t.groupId)),
+    [tasks, collapsedGroupIds]
+  );
+  const taskIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    sortedTasks.forEach((t, i) => map.set(t.id, i));
+    return map;
+  }, [sortedTasks]);
+  const taskMap = useMemo(
+    () => new Map(tasks.map((t) => [t.id, t])),
+    [tasks]
+  );
 
   const barVerticalPadding = (ROW_HEIGHT - BAR_HEIGHT) / 2;
   const barCenterY = (rowIndex: number) =>
@@ -58,7 +72,7 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
           fill="none"
           stroke="#9CA3AF"
           strokeWidth={1.5}
-          markerEnd="url(#arrowhead)"
+          markerEnd={`url(#${markerId})`}
         />
       </g>
     );
@@ -74,7 +88,7 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
     >
       <defs>
         <marker
-          id="arrowhead"
+          id={markerId}
           markerWidth="8"
           markerHeight="6"
           refX="8"

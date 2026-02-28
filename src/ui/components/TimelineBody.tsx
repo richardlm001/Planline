@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { TaskBar } from './TaskBar';
 import { DependencyArrows } from './DependencyArrows';
@@ -15,10 +16,16 @@ export function TimelineBody({ columnWidth, rangeStartDayIndex, pixelsPerDay, da
   const groups = useProjectStore((s) => s.groups);
   const computedStarts = useProjectStore((s) => s.computedStarts);
 
-  const collapsedGroupIds = new Set(groups.filter((g) => g.collapsed).map((g) => g.id));
-  const sortedTasks = [...tasks]
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .filter((t) => !t.groupId || !collapsedGroupIds.has(t.groupId));
+  const collapsedGroupIds = useMemo(
+    () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
+    [groups]
+  );
+  const sortedTasks = useMemo(
+    () => [...tasks]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .filter((t) => !t.groupId || !collapsedGroupIds.has(t.groupId)),
+    [tasks, collapsedGroupIds]
+  );
 
   return (
     <div className="relative" style={{ minHeight: sortedTasks.length * ROW_HEIGHT }}>

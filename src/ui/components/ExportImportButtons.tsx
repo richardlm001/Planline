@@ -1,7 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { buildExportData, validateImportData, importProject } from '../../db/export';
-import type { PlanlineExport } from '../../db/export';
 import { format } from 'date-fns';
 
 export function ExportImportButtons() {
@@ -37,14 +36,15 @@ export function ExportImportButtons() {
       const text = await file.text();
       const data: unknown = JSON.parse(text);
 
-      if (!validateImportData(data)) {
-        alert('Invalid Planline JSON file.');
+      const result = validateImportData(data);
+      if (!result.valid) {
+        alert(`Invalid Planline JSON file: ${result.error}`);
         return;
       }
 
       if (!confirm('This will replace all current data. Continue?')) return;
 
-      await importProject(data as PlanlineExport);
+      await importProject(result.data);
       await hydrate();
     } catch {
       alert('Failed to parse JSON file.');

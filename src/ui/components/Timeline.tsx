@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { format, isWeekend, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInCalendarDays } from 'date-fns';
 import { todayDayIndex, dayIndexToDate, dateToDayIndex } from '../../domain/constants';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -7,6 +7,29 @@ import { TimelineBody } from './TimelineBody';
 import { TodayLine } from './TodayLine';
 import { ZoomToggle } from './ZoomToggle';
 import { ZOOM_CONFIGS, HEADER_HEIGHT, VISIBLE_DAYS } from '../constants';
+
+function useTodayIndex(): number {
+  const [today, setToday] = useState(() => todayDayIndex());
+
+  useEffect(() => {
+    const handleFocus = () => setToday(todayDayIndex());
+    window.addEventListener('focus', handleFocus);
+
+    const now = new Date();
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+    const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+    const timer = setTimeout(() => {
+      setToday(todayDayIndex());
+    }, msUntilMidnight);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearTimeout(timer);
+    };
+  }, [today]);
+
+  return today;
+}
 
 export interface TimelineColumn {
   dayIndex: number; // start day index of this column
@@ -23,7 +46,7 @@ export function Timeline() {
   const zoomConfig = ZOOM_CONFIGS[zoomLevel];
   const columnWidth = zoomConfig.columnWidth;
 
-  const today = useMemo(() => todayDayIndex(), []);
+  const today = useTodayIndex();
 
   // Generate columns based on zoom level
   const columns = useMemo((): TimelineColumn[] => {
@@ -99,12 +122,14 @@ export function Timeline() {
   const totalWidth = columns.length * columnWidth;
 
   // pixelsPerDay: how many pixels represent a single calendar day
+  // For month zoom, we use an average based on total visible range for drag/resize
   const pixelsPerDay = useMemo(() => {
     if (zoomLevel === 'day') return columnWidth;
     if (zoomLevel === 'week') return columnWidth / 7;
-    // Month: approximate using 30 days
-    return columnWidth / 30;
-  }, [zoomLevel, columnWidth]);
+    // Month: calculate from actual total days across all columns
+    const totalDays = columns.reduce((sum, col) => sum + col.daysSpan, 0);
+    return totalWidth / totalDays;
+  }, [zoomLevel, columnWidth, columns, totalWidth]);
 
   // Compute the day-to-pixel mapping that accounts for variable-length columns (months)
   // For day/week zoom, this is linear. For month, we need column-aware mapping.
