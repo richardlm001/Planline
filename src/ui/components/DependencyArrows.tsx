@@ -11,10 +11,14 @@ interface DependencyArrowsProps {
 
 export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
   const tasks = useProjectStore((s) => s.tasks);
+  const groups = useProjectStore((s) => s.groups);
   const dependencies = useProjectStore((s) => s.dependencies);
   const computedStarts = useProjectStore((s) => s.computedStarts);
 
-  const sortedTasks = [...tasks].sort((a, b) => a.sortOrder - b.sortOrder);
+  const collapsedGroupIds = new Set(groups.filter((g) => g.collapsed).map((g) => g.id));
+  const sortedTasks = [...tasks]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .filter((t) => !t.groupId || !collapsedGroupIds.has(t.groupId));
   const taskIndexMap = new Map<string, number>();
   const taskMap = new Map(tasks.map((t) => [t.id, t]));
   sortedTasks.forEach((t, i) => taskIndexMap.set(t.id, i));
