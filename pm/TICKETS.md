@@ -47,3 +47,13 @@ Each ticket is a self-contained unit of work.
 | T-035 | [SVG marker ID collision risk](T-035-svg-marker-id-collision.md) | S | Medium | Done |
 | T-036 | [Keyboard hook sortedTasks not memoized](T-036-keyboard-hook-sortedtasks-not-memoized.md) | S | Medium | Done |
 | T-037 | [Expand test coverage](T-037-expand-test-coverage.md) | L | Medium | Done |
+
+## Feature Requests & Bug Fixes
+
+| #     | Ticket                                               | Size | Priority | Status  |
+| ----- | ---------------------------------------------------- | ---- | -------- | ------- |
+| T-038 | [Multi-select tasks](T-038-multi-select-tasks.md)    | M    | High     | Backlog |
+| T-039 | [Drag-drop reorder & group assignment](T-039-drag-drop-reorder-groups.md) | L | High | Backlog |
+| T-040 | [Softer default color palette](T-040-softer-default-colors.md) | S | Medium | Backlog |
+| T-041 | [Dependency linking drag line not rendering](T-041-dependency-drag-line-missing.md) | M | High | Backlog |
+| T-042 | [Zoom future dates empty](T-042-zoom-future-dates-empty.md) | S | High | Backlog |
