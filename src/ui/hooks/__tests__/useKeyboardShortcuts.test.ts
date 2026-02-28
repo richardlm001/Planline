@@ -21,7 +21,8 @@ beforeEach(() => {
     computedStarts: new Map([['a', 0], ['b', 2], ['c', 5]]),
     scheduleError: null,
     cycleTaskIds: [],
-    selectedTaskId: 'a',
+    selectedTaskIds: ['a'],
+    selectionAnchorId: 'a',
     editingTaskId: null,
     linkingFromTaskId: null,
     lastSavedAt: null,
@@ -33,14 +34,14 @@ describe('useKeyboardShortcuts', () => {
   it('ArrowDown selects next task', () => {
     renderHook(() => useKeyboardShortcuts());
     act(() => fireKey('ArrowDown'));
-    expect(useProjectStore.getState().selectedTaskId).toBe('b');
+    expect(useProjectStore.getState().selectedTaskIds).toEqual(['b']);
   });
 
   it('ArrowUp selects previous task', () => {
-    useProjectStore.setState({ selectedTaskId: 'b' });
+    useProjectStore.setState({ selectedTaskIds: ['b'], selectionAnchorId: 'b' });
     renderHook(() => useKeyboardShortcuts());
     act(() => fireKey('ArrowUp'));
-    expect(useProjectStore.getState().selectedTaskId).toBe('a');
+    expect(useProjectStore.getState().selectedTaskIds).toEqual(['a']);
   });
 
   it('Delete removes the selected task', async () => {
@@ -51,13 +52,13 @@ describe('useKeyboardShortcuts', () => {
     });
     const state = useProjectStore.getState();
     expect(state.tasks.find((t) => t.id === 'a')).toBeUndefined();
-    expect(state.selectedTaskId).toBeNull();
+    expect(state.selectedTaskIds).toHaveLength(0);
   });
 
   it('Escape deselects the current task', () => {
     renderHook(() => useKeyboardShortcuts());
     act(() => fireKey('Escape'));
-    expect(useProjectStore.getState().selectedTaskId).toBeNull();
+    expect(useProjectStore.getState().selectedTaskIds).toHaveLength(0);
   });
 
   it('Tab creates a dependent task', async () => {

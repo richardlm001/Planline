@@ -1,6 +1,6 @@
 # T-038 — Multi-Select Tasks
 
-**Status:** Backlog
+**Status:** Done
 **Size:** M
 
 ## Goal
@@ -60,3 +60,15 @@ Store changes:
 - Selection state is reflected visually in sidebar rows and task bars.
 - Keyboard delete operates on all selected tasks.
 - Existing single-click selection behavior is preserved.
+
+## Changelog
+
+- Replaced `selectedTaskId: string | null` with `selectedTaskIds: string[]` and `selectionAnchorId: string | null` in the store.
+- Rewrote `selectTask(id, opts?)` to support plain click, Cmd/Ctrl+click (toggle), and Shift+click (range).
+- Added `clearSelection()` action.
+- Updated `SidebarTaskRow`, `TaskBar`, and `useKeyboardShortcuts` to use the new multi-select API.
+- Delete/Backspace now removes all selected tasks.
+- Escape clears the entire selection.
+- Added 9 dedicated multi-select store tests (`multiSelect.test.ts`).
+- Updated all 22 existing test files to use `selectedTaskIds`.
+- All 135 tests pass.

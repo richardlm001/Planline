@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { TaskBar } from './TaskBar';
 import { DependencyArrows } from './DependencyArrows';
@@ -15,6 +15,8 @@ export function TimelineBody({ columnWidth, rangeStartDayIndex, pixelsPerDay, da
   const tasks = useProjectStore((s) => s.tasks);
   const groups = useProjectStore((s) => s.groups);
   const computedStarts = useProjectStore((s) => s.computedStarts);
+  const moveTasksToPosition = useProjectStore((s) => s.moveTasksToPosition);
+  const selectedTaskIds = useProjectStore((s) => s.selectedTaskIds);
 
   const collapsedGroupIds = useMemo(
     () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
@@ -26,6 +28,25 @@ export function TimelineBody({ columnWidth, rangeStartDayIndex, pixelsPerDay, da
       .filter((t) => !t.groupId || !collapsedGroupIds.has(t.groupId)),
     [tasks, collapsedGroupIds]
   );
+
+  const handleVerticalDrop = useCallback((taskId: string, targetRowIndex: number) => {
+    // Determine which tasks to move
+    const movingIds = selectedTaskIds.includes(taskId) ? selectedTaskIds : [taskId];
+
+    // Determine the target task's group from the target row position
+    const targetTask = sortedTasks[targetRowIndex];
+    const targetGroupId = targetTask?.groupId;
+
+    // Compute insertion index in the full sorted task list
+    // We need to map the visible row index back to the full sorted list index
+    const allSorted = [...tasks].sort((a, b) => a.sortOrder - b.sortOrder);
+    const remaining = allSorted.filter((t) => !movingIds.includes(t.id));
+    const targetIdx = targetTask
+      ? remaining.findIndex((t) => t.id === targetTask.id)
+      : remaining.length;
+
+    moveTasksToPosition(movingIds, Math.max(0, targetIdx), targetGroupId);
+  }, [selectedTaskIds, sortedTasks, tasks, moveTasksToPosition]);
 
   return (
     <div className="relative" style={{ minHeight: sortedTasks.length * ROW_HEIGHT }}>
@@ -59,6 +80,8 @@ export function TimelineBody({ columnWidth, rangeStartDayIndex, pixelsPerDay, da
             rangeStartDayIndex={rangeStartDayIndex}
             pixelsPerDay={pixelsPerDay}
             dayToPixel={dayToPixel}
+            totalRows={sortedTasks.length}
+            onVerticalDrop={handleVerticalDrop}
           />
         );
       })}

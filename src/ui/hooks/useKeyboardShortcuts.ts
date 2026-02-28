@@ -3,9 +3,10 @@ import { useProjectStore } from '../../store/useProjectStore';
 
 export function useKeyboardShortcuts() {
   const tasks = useProjectStore((s) => s.tasks);
-  const selectedTaskId = useProjectStore((s) => s.selectedTaskId);
+  const selectedTaskIds = useProjectStore((s) => s.selectedTaskIds);
   const editingTaskId = useProjectStore((s) => s.editingTaskId);
   const selectTask = useProjectStore((s) => s.selectTask);
+  const clearSelection = useProjectStore((s) => s.clearSelection);
   const addTask = useProjectStore((s) => s.addTask);
   const removeTask = useProjectStore((s) => s.removeTask);
   const addDependency = useProjectStore((s) => s.addDependency);
@@ -15,6 +16,9 @@ export function useKeyboardShortcuts() {
     () => [...tasks].sort((a, b) => a.sortOrder - b.sortOrder),
     [tasks]
   );
+
+  // The "primary" selected task is the last one in the selection (anchor behavior)
+  const selectedTaskId = selectedTaskIds.length > 0 ? selectedTaskIds[selectedTaskIds.length - 1] : null;
 
   const handleKeyDown = useCallback(
     async (e: KeyboardEvent) => {
@@ -28,7 +32,7 @@ export function useKeyboardShortcuts() {
         if (editingTaskId) {
           setEditingTaskId(null);
         } else {
-          selectTask(null);
+          clearSelection();
         }
         return;
       }
@@ -65,16 +69,19 @@ export function useKeyboardShortcuts() {
       }
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedTaskId) {
+        if (selectedTaskIds.length > 0) {
           e.preventDefault();
-          await removeTask(selectedTaskId);
+          // Delete all selected tasks
+          for (const id of [...selectedTaskIds]) {
+            await removeTask(id);
+          }
         }
         return;
       }
 
       if (e.key === 'Enter') {
         e.preventDefault();
-        // Insert after selected task with midpoint sortOrder
+        // Insert after last selected task with midpoint sortOrder
         const selectedIdx = selectedTaskId
           ? sortedTasks.findIndex((t) => t.id === selectedTaskId)
           : -1;
@@ -134,8 +141,10 @@ export function useKeyboardShortcuts() {
     [
       sortedTasks,
       selectedTaskId,
+      selectedTaskIds,
       editingTaskId,
       selectTask,
+      clearSelection,
       addTask,
       removeTask,
       addDependency,

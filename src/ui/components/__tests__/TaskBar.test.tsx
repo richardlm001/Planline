@@ -12,7 +12,8 @@ beforeEach(() => {
     computedStarts: new Map(),
     scheduleError: null,
     cycleTaskIds: [],
-    selectedTaskId: null,
+    selectedTaskIds: [],
+    selectionAnchorId: null,
     editingTaskId: null,
     linkingFromTaskId: null,
     lastSavedAt: null,
@@ -40,6 +41,8 @@ const defaultProps = {
   rangeStartDayIndex: 0,
   pixelsPerDay: 40,
   dayToPixel,
+  totalRows: 3,
+  onVerticalDrop: () => {},
 };
 
 describe('TaskBar', () => {
@@ -60,7 +63,7 @@ describe('TaskBar', () => {
   });
 
   it('applies selected styling when task is selected', () => {
-    useProjectStore.setState({ selectedTaskId: 't1' });
+    useProjectStore.setState({ selectedTaskIds: ['t1'], selectionAnchorId: 't1' });
     const { container } = render(<TaskBar {...defaultProps} />);
     const bar = container.firstElementChild as HTMLElement;
     expect(bar.className).toContain('ring-2');
@@ -68,7 +71,7 @@ describe('TaskBar', () => {
   });
 
   it('does not apply selected styling when another task is selected', () => {
-    useProjectStore.setState({ selectedTaskId: 'other' });
+    useProjectStore.setState({ selectedTaskIds: ['other'], selectionAnchorId: 'other' });
     const { container } = render(<TaskBar {...defaultProps} />);
     const bar = container.firstElementChild as HTMLElement;
     expect(bar.className).not.toContain('ring-2');
@@ -82,7 +85,7 @@ describe('TaskBar', () => {
     bar.setPointerCapture = () => {};
     bar.releasePointerCapture = () => {};
     fireEvent.pointerDown(bar, { clientX: 100, pointerId: 1 });
-    expect(useProjectStore.getState().selectedTaskId).toBe('t1');
+    expect(useProjectStore.getState().selectedTaskIds).toContain('t1');
   });
 
   it('renders input and output connectors', () => {

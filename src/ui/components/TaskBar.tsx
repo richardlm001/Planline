@@ -11,11 +11,14 @@ interface TaskBarProps {
   rangeStartDayIndex: number;
   pixelsPerDay: number;
   dayToPixel: (dayIndex: number) => number;
+  totalRows: number;
+  onVerticalDrop?: (taskId: string, targetRowIndex: number) => void;
 }
 
 export const BAR_HEIGHT = 28;
 const BAR_VERTICAL_PADDING = (ROW_HEIGHT - BAR_HEIGHT) / 2;
 const RESIZE_HANDLE_WIDTH = 8;
+const DRAG_DIRECTION_THRESHOLD = 5; // pixels before deciding direction
 
 export const TaskBar = memo(function TaskBar({
   task,
@@ -23,10 +26,12 @@ export const TaskBar = memo(function TaskBar({
   rowIndex,
   pixelsPerDay,
   dayToPixel,
+  totalRows,
+  onVerticalDrop,
 }: TaskBarProps) {
   const updateTask = useProjectStore((s) => s.updateTask);
   const selectTask = useProjectStore((s) => s.selectTask);
-  const isSelected = useProjectStore((s) => s.selectedTaskId === task.id);
+  const isSelected = useProjectStore((s) => s.selectedTaskIds.includes(task.id));
   const isLinking = useProjectStore((s) => s.linkingFromTaskId !== null);
   const linkingFromTaskId = useProjectStore((s) => s.linkingFromTaskId);
   const setLinkingFromTaskId = useProjectStore((s) => s.setLinkingFromTaskId);
@@ -34,13 +39,17 @@ export const TaskBar = memo(function TaskBar({
 
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [verticalDragRow, setVerticalDragRow] = useState<number | null>(null);
+  const [isVerticalDrag, setIsVerticalDrag] = useState(false);
   const [resizeDelta, setResizeDelta] = useState(0);
   const [resizeEdge, setResizeEdge] = useState<'left' | 'right' | null>(null);
 
   const dragStartX = useRef(0);
+  const dragStartY = useRef(0);
   const originalStart = useRef(computedStart);
+  const dragDirectionDecided = useRef(false);
 
-  const effectiveStart = computedStart + (isDragging ? Math.round(dragOffset / pixelsPerDay) : 0);
+  const effectiveStart = computedStart + (isDragging && !isVerticalDrag ? Math.round(dragOffset / pixelsPerDay) : 0);
 
   // Compute display values accounting for resize
   let displayStart = effectiveStart;
@@ -58,7 +67,9 @@ export const TaskBar = memo(function TaskBar({
 
   const left = dayToPixel(displayStart);
   const width = displayDuration * pixelsPerDay;
-  const top = rowIndex * ROW_HEIGHT + BAR_VERTICAL_PADDING;
+  const displayTop = isVerticalDrag && verticalDragRow !== null
+    ? verticalDragRow * ROW_HEIGHT + BAR_VERTICAL_PADDING
+    : rowIndex * ROW_HEIGHT + BAR_VERTICAL_PADDING;
 
   // --- Move drag handlers ---
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -70,30 +81,62 @@ export const TaskBar = memo(function TaskBar({
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     dragStartX.current = e.clientX;
+    dragStartY.current = e.clientY;
     originalStart.current = computedStart;
+    dragDirectionDecided.current = false;
     setIsDragging(true);
+    setIsVerticalDrag(false);
     setDragOffset(0);
-    selectTask(task.id);
+    setVerticalDragRow(null);
+    selectTask(task.id, { shift: e.shiftKey, meta: e.metaKey || e.ctrlKey });
   }, [computedStart, selectTask, task.id]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (isDragging) {
-      setDragOffset(e.clientX - dragStartX.current);
+    if (!isDragging) return;
+
+    const dx = e.clientX - dragStartX.current;
+    const dy = e.clientY - dragStartY.current;
+
+    if (!dragDirectionDecided.current) {
+      if (Math.abs(dx) >= DRAG_DIRECTION_THRESHOLD || Math.abs(dy) >= DRAG_DIRECTION_THRESHOLD) {
+        dragDirectionDecided.current = true;
+        if (Math.abs(dy) > Math.abs(dx)) {
+          setIsVerticalDrag(true);
+        }
+      }
+      return;
     }
-  }, [isDragging]);
+
+    if (isVerticalDrag) {
+      // Compute target row from Y offset
+      const targetRow = Math.max(0, Math.min(totalRows - 1, Math.round((rowIndex * ROW_HEIGHT + dy) / ROW_HEIGHT)));
+      setVerticalDragRow(targetRow);
+    } else {
+      setDragOffset(dx);
+    }
+  }, [isDragging, isVerticalDrag, rowIndex, totalRows]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (isDragging) {
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      const daysDelta = Math.round((e.clientX - dragStartX.current) / pixelsPerDay);
-      setIsDragging(false);
-      setDragOffset(0);
-      if (daysDelta !== 0) {
-        const newStart = computedStart + daysDelta;
-        updateTask(task.id, { startDayIndex: newStart });
+
+      if (isVerticalDrag && verticalDragRow !== null && verticalDragRow !== rowIndex) {
+        onVerticalDrop?.(task.id, verticalDragRow);
+      } else if (!isVerticalDrag) {
+        const daysDelta = Math.round((e.clientX - dragStartX.current) / pixelsPerDay);
+        if (daysDelta !== 0) {
+          const newStart = computedStart + daysDelta;
+          updateTask(task.id, { startDayIndex: newStart });
+        }
       }
+
+      setIsDragging(false);
+      setIsVerticalDrag(false);
+      setDragOffset(0);
+      setVerticalDragRow(null);
+      dragDirectionDecided.current = false;
     }
-  }, [isDragging, pixelsPerDay, task.id, task.startDayIndex, updateTask]);
+  }, [isDragging, isVerticalDrag, verticalDragRow, rowIndex, pixelsPerDay, task.id, computedStart, updateTask, onVerticalDrop]);
 
   // --- Resize handlers ---
   const handleResizePointerDown = useCallback((e: React.PointerEvent, edge: 'left' | 'right') => {
@@ -103,7 +146,7 @@ export const TaskBar = memo(function TaskBar({
     dragStartX.current = e.clientX;
     setResizeEdge(edge);
     setResizeDelta(0);
-    selectTask(task.id);
+    selectTask(task.id, { shift: e.shiftKey, meta: e.metaKey || e.ctrlKey });
   }, [selectTask, task.id]);
 
   const handleResizePointerMove = useCallback((e: React.PointerEvent) => {
@@ -160,9 +203,10 @@ export const TaskBar = memo(function TaskBar({
       style={{
         left,
         width,
-        top,
+        top: displayTop,
         height: BAR_HEIGHT,
         backgroundColor: task.color,
+        zIndex: isDragging ? 50 : undefined,
       }}
       title={task.name}
       onPointerDown={handlePointerDown}

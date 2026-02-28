@@ -1,6 +1,6 @@
 # T-039 — Drag-and-Drop Reorder & Group Assignment
 
-**Status:** Backlog
+**Status:** Done
 **Size:** L
 **Depends on:** T-038
 
@@ -76,3 +76,15 @@ Updates `sortOrder` and `groupId` on affected tasks. No schema changes.
 - Tasks can be vertically dragged on the timeline to reorder and reassign groups.
 - Multi-selected tasks move together.
 - Sort order is consistent after every operation.
+
+## Changelog
+
+- Added `moveTasksToPosition(taskIds, targetIndex, targetGroupId?)` store action that reorders tasks, updates `groupId`, and renormalizes `sortOrder`.
+- Added drag handle (⠿) and HTML5 drag-and-drop to `SidebarTaskRow`.
+- `SidebarGroupRow` accepts drops to assign tasks to the group.
+- `Sidebar` manages drag state, drop indicators, and dispatches `moveTasksToPosition`.
+- `TaskBar` detects vertical vs horizontal drag: Y-dominant drag reorders rows, X-dominant drag moves start date.
+- `TimelineBody` passes `totalRows` and `onVerticalDrop` callback to `TaskBar`.
+- Multi-selected tasks move together, preserving relative order.
+- Added 8 store tests (`moveTasksToPosition.test.ts`) covering reorder, group assignment, multi-task, and renormalization.
+- All 135 tests pass.

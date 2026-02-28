@@ -20,7 +20,8 @@ interface ProjectState {
   cycleTaskIds: string[];
 
   // UI state
-  selectedTaskId: string | null;
+  selectedTaskIds: string[];
+  selectionAnchorId: string | null;
   editingTaskId: string | null;
   linkingFromTaskId: string | null;
   zoomLevel: ZoomLevel;
@@ -40,7 +41,9 @@ interface ProjectState {
   addGroup: (group?: Partial<Group>) => Promise<Group>;
   updateGroup: (id: string, partial: Partial<Group>) => Promise<void>;
   removeGroup: (id: string) => Promise<void>;
-  selectTask: (id: string | null) => void;
+  selectTask: (id: string | null, opts?: { shift?: boolean; meta?: boolean }) => void;
+  clearSelection: () => void;
+  moveTasksToPosition: (taskIds: string[], targetIndex: number, targetGroupId?: string) => Promise<void>;
   setEditingTaskId: (id: string | null) => void;
   setLinkingFromTaskId: (id: string | null) => void;
   setZoomLevel: (level: ZoomLevel) => void;
@@ -76,7 +79,8 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   computedStarts: new Map(),
   scheduleError: null,
   cycleTaskIds: [],
-  selectedTaskId: null,
+  selectedTaskIds: [],
+  selectionAnchorId: null,
   editingTaskId: null,
   linkingFromTaskId: null,
   zoomLevel: 'day' as ZoomLevel,
@@ -179,7 +183,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       tasks: newTasks,
       dependencies: newDeps,
       ...schedule,
-      selectedTaskId: state.selectedTaskId === id ? null : state.selectedTaskId,
+      selectedTaskIds: state.selectedTaskIds.filter((sid) => sid !== id),
       lastSavedAt: new Date(),
     });
 
@@ -334,8 +338,95 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     }
   },
 
-  selectTask: (id: string | null) => {
-    set({ selectedTaskId: id });
+  selectTask: (id: string | null, opts?: { shift?: boolean; meta?: boolean }) => {
+    if (id === null) {
+      set({ selectedTaskIds: [], selectionAnchorId: null });
+      return;
+    }
+
+    const state = get();
+
+    if (opts?.meta) {
+      // Cmd/Ctrl+click: toggle individual task
+      const isAlreadySelected = state.selectedTaskIds.includes(id);
+      const newIds = isAlreadySelected
+        ? state.selectedTaskIds.filter((sid) => sid !== id)
+        : [...state.selectedTaskIds, id];
+      set({ selectedTaskIds: newIds, selectionAnchorId: id });
+      return;
+    }
+
+    if (opts?.shift && state.selectionAnchorId) {
+      // Shift+click: select range based on sorted task list
+      const sortedTasks = [...state.tasks].sort((a, b) => a.sortOrder - b.sortOrder);
+      const anchorIdx = sortedTasks.findIndex((t) => t.id === state.selectionAnchorId);
+      const targetIdx = sortedTasks.findIndex((t) => t.id === id);
+      if (anchorIdx >= 0 && targetIdx >= 0) {
+        const start = Math.min(anchorIdx, targetIdx);
+        const end = Math.max(anchorIdx, targetIdx);
+        const rangeIds = sortedTasks.slice(start, end + 1).map((t) => t.id);
+        set({ selectedTaskIds: rangeIds });
+        return;
+      }
+    }
+
+    // Plain click: select single task
+    set({ selectedTaskIds: [id], selectionAnchorId: id });
+  },
+
+  clearSelection: () => {
+    set({ selectedTaskIds: [], selectionAnchorId: null });
+  },
+
+  moveTasksToPosition: async (taskIds: string[], targetIndex: number, targetGroupId?: string) => {
+    const state = get();
+    const movingSet = new Set(taskIds);
+
+    // Build the full sorted task list
+    const sorted = [...state.tasks].sort((a, b) => a.sortOrder - b.sortOrder);
+
+    // Separate the tasks being moved (preserving their relative order)
+    const moving = sorted.filter((t) => movingSet.has(t.id));
+    const remaining = sorted.filter((t) => !movingSet.has(t.id));
+
+    // Clamp targetIndex
+    const clampedIndex = Math.max(0, Math.min(targetIndex, remaining.length));
+
+    // Insert moving tasks at the target position
+    const reordered = [
+      ...remaining.slice(0, clampedIndex),
+      ...moving,
+      ...remaining.slice(clampedIndex),
+    ];
+
+    // Renormalize sortOrder and apply groupId changes
+    const updatedTasks = reordered.map((t, i) => {
+      const updates: Partial<Task> = { sortOrder: i };
+      if (movingSet.has(t.id)) {
+        updates.groupId = targetGroupId;
+      }
+      return { ...t, ...updates };
+    });
+
+    set({
+      tasks: updatedTasks,
+      lastSavedAt: new Date(),
+    });
+
+    // Persist all changed tasks
+    try {
+      for (const task of updatedTasks) {
+        const original = state.tasks.find((t) => t.id === task.id);
+        if (
+          original &&
+          (original.sortOrder !== task.sortOrder || original.groupId !== task.groupId)
+        ) {
+          await repo.saveTask(task);
+        }
+      }
+    } catch (err) {
+      set({ persistError: err instanceof Error ? err.message : 'Failed to move tasks' });
+    }
   },
 
   setEditingTaskId: (id: string | null) => {

@@ -5,9 +5,12 @@ import { ROW_HEIGHT } from '../constants';
 
 interface SidebarGroupRowProps {
   group: Group;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  isDragOver?: boolean;
 }
 
-export function SidebarGroupRow({ group }: SidebarGroupRowProps) {
+export function SidebarGroupRow({ group, onDragOver, onDrop, isDragOver = false }: SidebarGroupRowProps) {
   const updateGroup = useProjectStore((s) => s.updateGroup);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(group.name);
@@ -58,9 +61,13 @@ export function SidebarGroupRow({ group }: SidebarGroupRowProps) {
 
   return (
     <div
-      className="flex items-center px-2 cursor-pointer select-none text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100 bg-gray-50 hover:bg-gray-100"
+      className={`flex items-center px-2 cursor-pointer select-none text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100 bg-gray-50 hover:bg-gray-100 ${
+        isDragOver ? 'ring-2 ring-inset ring-blue-400 bg-blue-50' : ''
+      }`}
       style={{ height: ROW_HEIGHT }}
       onDoubleClick={startEditing}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       data-testid={`group-row-${group.id}`}
     >
       <button

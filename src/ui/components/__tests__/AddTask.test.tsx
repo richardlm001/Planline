@@ -15,7 +15,8 @@ beforeEach(async () => {
     computedStarts: new Map(),
     scheduleError: null,
     cycleTaskIds: [],
-    selectedTaskId: null,
+    selectedTaskIds: [],
+    selectionAnchorId: null,
     editingTaskId: null,
     linkingFromTaskId: null,
     lastSavedAt: null,
@@ -42,7 +43,7 @@ describe('Add Task', () => {
     expect(state.tasks).toHaveLength(1);
     expect(state.tasks[0].name).toBe('New task');
     expect(state.tasks[0].durationDays).toBe(3);
-    expect(state.selectedTaskId).toBe(state.tasks[0].id);
+    expect(state.selectedTaskIds).toContain(state.tasks[0].id);
   });
 
   it('new task appears in the sidebar', async () => {

@@ -14,7 +14,8 @@ beforeEach(async () => {
     computedStarts: new Map(),
     scheduleError: null,
     cycleTaskIds: [],
-    selectedTaskId: null,
+    selectedTaskIds: [],
+    selectionAnchorId: null,
     editingTaskId: null,
     linkingFromTaskId: null,
     lastSavedAt: null,
@@ -122,10 +123,10 @@ describe('useProjectStore', () => {
   it('removeTask deselects if the removed task was selected', async () => {
     const task = await useProjectStore.getState().addTask({ name: 'Test' });
     useProjectStore.getState().selectTask(task.id);
-    expect(useProjectStore.getState().selectedTaskId).toBe(task.id);
+    expect(useProjectStore.getState().selectedTaskIds).toContain(task.id);
 
     await useProjectStore.getState().removeTask(task.id);
-    expect(useProjectStore.getState().selectedTaskId).toBeNull();
+    expect(useProjectStore.getState().selectedTaskIds).toHaveLength(0);
   });
 
   it('addDependency rejects self-dependency', async () => {
@@ -157,12 +158,12 @@ describe('useProjectStore', () => {
     expect(state.dependencies).toHaveLength(0);
   });
 
-  it('selectTask sets and clears selectedTaskId', () => {
+  it('selectTask sets and clears selectedTaskIds', () => {
     useProjectStore.getState().selectTask('some-id');
-    expect(useProjectStore.getState().selectedTaskId).toBe('some-id');
+    expect(useProjectStore.getState().selectedTaskIds).toEqual(['some-id']);
 
     useProjectStore.getState().selectTask(null);
-    expect(useProjectStore.getState().selectedTaskId).toBeNull();
+    expect(useProjectStore.getState().selectedTaskIds).toHaveLength(0);
   });
 
   it('updateProject updates project fields', async () => {

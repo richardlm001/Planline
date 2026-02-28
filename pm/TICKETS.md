@@ -52,8 +52,8 @@ Each ticket is a self-contained unit of work.
 
 | #     | Ticket                                               | Size | Priority | Status  |
 | ----- | ---------------------------------------------------- | ---- | -------- | ------- |
-| T-038 | [Multi-select tasks](T-038-multi-select-tasks.md)    | M    | High     | Backlog |
-| T-039 | [Drag-drop reorder & group assignment](T-039-drag-drop-reorder-groups.md) | L | High | Backlog |
+| T-038 | [Multi-select tasks](T-038-multi-select-tasks.md)    | M    | High     | Done    |
+| T-039 | [Drag-drop reorder & group assignment](T-039-drag-drop-reorder-groups.md) | L | High | Done |
 | T-040 | [Softer default color palette](T-040-softer-default-colors.md) | S | Medium | Done |
 | T-041 | [Dependency linking drag line not rendering](T-041-dependency-drag-line-missing.md) | M | High | Done |
 | T-042 | [Zoom future dates empty](T-042-zoom-future-dates-empty.md) | S | High | Done |

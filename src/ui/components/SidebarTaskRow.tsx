@@ -7,10 +7,14 @@ import { ROW_HEIGHT } from '../constants';
 interface SidebarTaskRowProps {
   task: Task;
   indented?: boolean;
+  onDragStart?: (e: React.DragEvent, taskId: string) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  isDragOver?: boolean;
 }
 
-export function SidebarTaskRow({ task, indented = false }: SidebarTaskRowProps) {
-  const selectedTaskId = useProjectStore((s) => s.selectedTaskId);
+export function SidebarTaskRow({ task, indented = false, onDragStart, onDragOver, onDrop, isDragOver = false }: SidebarTaskRowProps) {
+  const selectedTaskIds = useProjectStore((s) => s.selectedTaskIds);
   const editingTaskId = useProjectStore((s) => s.editingTaskId);
   const selectTask = useProjectStore((s) => s.selectTask);
   const updateTask = useProjectStore((s) => s.updateTask);
@@ -20,7 +24,7 @@ export function SidebarTaskRow({ task, indented = false }: SidebarTaskRowProps) 
   const [editValue, setEditValue] = useState(task.name);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isSelected = selectedTaskId === task.id;
+  const isSelected = selectedTaskIds.includes(task.id);
 
   const startEditing = useCallback(() => {
     setEditValue(task.name);
@@ -70,18 +74,30 @@ export function SidebarTaskRow({ task, indented = false }: SidebarTaskRowProps) 
     }
   };
 
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    onDragStart?.(e, task.id);
+  }, [onDragStart, task.id]);
+
   return (
     <div
       className={`flex items-center cursor-pointer select-none text-sm border-b border-gray-100 ${
         isSelected ? 'bg-blue-50 text-blue-900' : 'hover:bg-gray-100'
-      }`}
+      } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
       style={{ height: ROW_HEIGHT, paddingLeft: indented ? 28 : 12, paddingRight: 12 }}
-      onClick={() => selectTask(task.id)}
+      onClick={(e) => selectTask(task.id, { shift: e.shiftKey, meta: e.metaKey || e.ctrlKey })}
       onDoubleClick={startEditing}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       data-testid={`task-row-${task.id}`}
+      draggable
+      onDragStart={handleDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
     >
+      {/* Drag handle */}
+      <div className="flex-shrink-0 cursor-grab text-gray-300 hover:text-gray-500 mr-1 text-xs select-none" data-testid={`drag-handle-${task.id}`}>
+        ⠿
+      </div>
       <ColorPicker taskId={task.id} currentColor={task.color} />
       <div className="w-1 flex-shrink-0" />
       {isEditing ? (

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { HEADER_HEIGHT } from '../constants';
 import { useProjectStore } from '../../store/useProjectStore';
 import { SidebarTaskRow } from './SidebarTaskRow';
@@ -10,10 +10,15 @@ import { SavedIndicator } from './SavedIndicator';
 export function Sidebar() {
   const tasks = useProjectStore((s) => s.tasks);
   const groups = useProjectStore((s) => s.groups);
+  const selectedTaskIds = useProjectStore((s) => s.selectedTaskIds);
   const addTask = useProjectStore((s) => s.addTask);
   const addGroup = useProjectStore((s) => s.addGroup);
   const selectTask = useProjectStore((s) => s.selectTask);
   const setEditingTaskId = useProjectStore((s) => s.setEditingTaskId);
+  const moveTasksToPosition = useProjectStore((s) => s.moveTasksToPosition);
+
+  const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
+  const [dragOverType, setDragOverType] = useState<'task' | 'group' | null>(null);
 
   const sortedTasks = useMemo(
     () => [...tasks].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -48,8 +53,88 @@ export function Sidebar() {
     await addGroup();
   }, [addGroup]);
 
+  // --- Drag and drop handlers ---
+  const handleTaskDragStart = useCallback((e: React.DragEvent, taskId: string) => {
+    // If the dragged task is not in the current selection, select it alone
+    if (!selectedTaskIds.includes(taskId)) {
+      selectTask(taskId);
+    }
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', taskId);
+  }, [selectedTaskIds, selectTask]);
+
+  const handleTaskDragOver = useCallback((e: React.DragEvent, taskId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverItemId(taskId);
+    setDragOverType('task');
+  }, []);
+
+  const handleGroupDragOver = useCallback((e: React.DragEvent, groupId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverItemId(groupId);
+    setDragOverType('group');
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    const dropTargetId = dragOverItemId;
+    const dropTargetType = dragOverType;
+    setDragOverItemId(null);
+    setDragOverType(null);
+
+    if (!dropTargetId) return;
+
+    // Determine which task IDs are being moved
+    const currentSelection = useProjectStore.getState().selectedTaskIds;
+    const movingIds = currentSelection.length > 0 ? currentSelection : [];
+    if (movingIds.length === 0) return;
+
+    if (dropTargetType === 'group') {
+      // Dropped on a group header → assign tasks to that group
+      // Find the position after the group's last child in the sorted task list
+      const groupChildrenInSorted = sortedTasks.filter((t) => t.groupId === dropTargetId && !movingIds.includes(t.id));
+      const lastGroupTask = groupChildrenInSorted.length > 0 ? groupChildrenInSorted[groupChildrenInSorted.length - 1] : null;
+      const remaining = sortedTasks.filter((t) => !movingIds.includes(t.id));
+      const targetIndex = lastGroupTask
+        ? remaining.findIndex((t) => t.id === lastGroupTask.id) + 1
+        : remaining.findIndex((t) => t.groupId === dropTargetId);
+
+      await moveTasksToPosition(movingIds, Math.max(0, targetIndex === -1 ? remaining.length : targetIndex), dropTargetId);
+    } else {
+      // Dropped on a task row → insert before that task
+      const dropTask = sortedTasks.find((t) => t.id === dropTargetId);
+      const targetGroupId = dropTask?.groupId;
+      const remaining = sortedTasks.filter((t) => !movingIds.includes(t.id));
+      const targetIndex = remaining.findIndex((t) => t.id === dropTargetId);
+      await moveTasksToPosition(movingIds, Math.max(0, targetIndex), targetGroupId);
+    }
+  }, [dragOverItemId, dragOverType, sortedTasks, groupedTasks, moveTasksToPosition]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragOverItemId(null);
+    setDragOverType(null);
+  }, []);
+
+  // Handle dropping on the empty area (ungroup / append to end)
+  const handleListDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleListDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverItemId(null);
+    setDragOverType(null);
+    const currentSelection = useProjectStore.getState().selectedTaskIds;
+    if (currentSelection.length === 0) return;
+    // Drop at end, no group
+    await moveTasksToPosition(currentSelection, sortedTasks.length, undefined);
+  }, [sortedTasks.length, moveTasksToPosition]);
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" onDragEnd={handleDragEnd}>
       {/* Project name */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
         <ProjectHeader />
@@ -79,10 +164,18 @@ export function Sidebar() {
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" onDragOver={handleListDragOver} onDrop={handleListDrop}>
         {/* Ungrouped tasks first */}
         {ungroupedTasks.map((task) => (
-          <SidebarTaskRow key={task.id} task={task} indented={false} />
+          <SidebarTaskRow
+            key={task.id}
+            task={task}
+            indented={false}
+            onDragStart={handleTaskDragStart}
+            onDragOver={(e) => handleTaskDragOver(e, task.id)}
+            onDrop={handleDrop}
+            isDragOver={dragOverItemId === task.id && dragOverType === 'task'}
+          />
         ))}
 
         {/* Groups with their children */}
@@ -90,14 +183,29 @@ export function Sidebar() {
           const children = groupedTasks.get(group.id) ?? [];
           return (
             <div key={group.id}>
-              <SidebarGroupRow group={group} />
+              <SidebarGroupRow
+                group={group}
+                onDragOver={(e) => handleGroupDragOver(e, group.id)}
+                onDrop={handleDrop}
+                isDragOver={dragOverItemId === group.id && dragOverType === 'group'}
+              />
               {!group.collapsed &&
                 children.map((task) => (
-                  <SidebarTaskRow key={task.id} task={task} indented />
+                  <SidebarTaskRow
+                    key={task.id}
+                    task={task}
+                    indented
+                    onDragStart={handleTaskDragStart}
+                    onDragOver={(e) => handleTaskDragOver(e, task.id)}
+                    onDrop={handleDrop}
+                    isDragOver={dragOverItemId === task.id && dragOverType === 'task'}
+                  />
                 ))}
             </div>
           );
         })}
-      </div>      <SavedIndicator />    </div>
+      </div>
+      <SavedIndicator />
+    </div>
   );
 }

@@ -22,7 +22,8 @@ beforeEach(() => {
     computedStarts: new Map([['test-1', 0]]),
     scheduleError: null,
     cycleTaskIds: [],
-    selectedTaskId: null,
+    selectedTaskIds: [],
+    selectionAnchorId: null,
     lastSavedAt: null,
     isLoaded: true,
   });
@@ -37,7 +38,7 @@ describe('SidebarTaskRow', () => {
   it('clicking selects the task', () => {
     render(<SidebarTaskRow task={testTask} />);
     fireEvent.click(screen.getByTestId('task-row-test-1'));
-    expect(useProjectStore.getState().selectedTaskId).toBe('test-1');
+    expect(useProjectStore.getState().selectedTaskIds).toContain('test-1');
   });
 
   it('double-clicking enters edit mode and saving updates the name', async () => {
