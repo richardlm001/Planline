@@ -57,3 +57,5 @@ Each ticket is a self-contained unit of work.
 | T-040 | [Softer default color palette](T-040-softer-default-colors.md) | S | Medium | Backlog |
 | T-041 | [Dependency linking drag line not rendering](T-041-dependency-drag-line-missing.md) | M | High | Backlog |
 | T-042 | [Zoom future dates empty](T-042-zoom-future-dates-empty.md) | S | High | Backlog |
+| T-043 | [Curved dependency arrow lines](T-043-curved-dependency-arrows.md) | S | Medium | Backlog |
+| T-044 | [Right-edge resize blocked by connector](T-044-resize-blocked-by-connector.md) | S | High | Backlog |
