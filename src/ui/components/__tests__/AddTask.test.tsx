@@ -17,8 +17,11 @@ beforeEach(async () => {
     cycleTaskIds: [],
     selectedTaskId: null,
     editingTaskId: null,
+    linkingFromTaskId: null,
     lastSavedAt: null,
     isLoaded: true,
+    hydrationError: null,
+    persistError: null,
   });
 });
 
@@ -28,8 +31,11 @@ describe('Add Task', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('add-task-btn'));
-      // Allow async operations to complete
-      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    // Allow microtasks and async persistence to complete
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 100));
     });
 
     const state = useProjectStore.getState();

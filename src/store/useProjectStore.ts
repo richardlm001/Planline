@@ -26,6 +26,8 @@ interface ProjectState {
   zoomLevel: ZoomLevel;
   lastSavedAt: Date | null;
   isLoaded: boolean;
+  hydrationError: string | null;
+  persistError: string | null;
 
   // Actions
   hydrate: () => Promise<void>;
@@ -42,6 +44,7 @@ interface ProjectState {
   setEditingTaskId: (id: string | null) => void;
   setLinkingFromTaskId: (id: string | null) => void;
   setZoomLevel: (level: ZoomLevel) => void;
+  dismissError: () => void;
 }
 
 function runScheduler(tasks: Task[], dependencies: Dependency[]) {
@@ -79,15 +82,25 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   zoomLevel: 'day' as ZoomLevel,
   lastSavedAt: null,
   isLoaded: false,
+  hydrationError: null,
+  persistError: null,
 
   hydrate: async () => {
-    const data = await repo.loadAll();
-    const schedule = runScheduler(data.tasks, data.dependencies);
-    set({
-      ...data,
-      ...schedule,
-      isLoaded: true,
-    });
+    try {
+      const data = await repo.loadAll();
+      const schedule = runScheduler(data.tasks, data.dependencies);
+      set({
+        ...data,
+        ...schedule,
+        isLoaded: true,
+        hydrationError: null,
+      });
+    } catch (err) {
+      set({
+        isLoaded: true,
+        hydrationError: err instanceof Error ? err.message : 'Failed to load data',
+      });
+    }
   },
 
   addTask: async (partial?: Partial<Task>) => {
@@ -114,7 +127,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       lastSavedAt: new Date(),
     });
 
-    await repo.saveTask(task);
+    try {
+      await repo.saveTask(task);
+    } catch (err) {
+      set({ persistError: err instanceof Error ? err.message : 'Failed to save task' });
+    }
     return task;
   },
 
@@ -141,7 +158,13 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     }
 
     const updated = newTasks.find((t) => t.id === id);
-    if (updated) await repo.saveTask(updated);
+    if (updated) {
+      try {
+        await repo.saveTask(updated);
+      } catch (err) {
+        set({ persistError: err instanceof Error ? err.message : 'Failed to update task' });
+      }
+    }
   },
 
   removeTask: async (id: string) => {
@@ -160,8 +183,12 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       lastSavedAt: new Date(),
     });
 
-    await repo.deleteTask(id);
-    await repo.deleteDependenciesForTask(id);
+    try {
+      await repo.deleteTask(id);
+      await repo.deleteDependenciesForTask(id);
+    } catch (err) {
+      set({ persistError: err instanceof Error ? err.message : 'Failed to remove task' });
+    }
   },
 
   addDependency: async (fromTaskId: string, toTaskId: string) => {
@@ -195,7 +222,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       lastSavedAt: new Date(),
     });
 
-    await repo.saveDependency(dep);
+    try {
+      await repo.saveDependency(dep);
+    } catch (err) {
+      set({ persistError: err instanceof Error ? err.message : 'Failed to save dependency' });
+    }
     return { ok: true };
   },
 
@@ -210,7 +241,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       lastSavedAt: new Date(),
     });
 
-    await repo.deleteDependency(id);
+    try {
+      await repo.deleteDependency(id);
+    } catch (err) {
+      set({ persistError: err instanceof Error ? err.message : 'Failed to remove dependency' });
+    }
   },
 
   updateProject: async (partial: Partial<Project>) => {
@@ -222,7 +257,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       lastSavedAt: new Date(),
     });
 
-    await repo.saveProject(updated);
+    try {
+      await repo.saveProject(updated);
+    } catch (err) {
+      set({ persistError: err instanceof Error ? err.message : 'Failed to save project' });
+    }
   },
 
   addGroup: async (partial?: Partial<Group>) => {
@@ -242,7 +281,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       lastSavedAt: new Date(),
     });
 
-    await repo.saveGroup(group);
+    try {
+      await repo.saveGroup(group);
+    } catch (err) {
+      set({ persistError: err instanceof Error ? err.message : 'Failed to save group' });
+    }
     return group;
   },
 
@@ -256,7 +299,13 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     });
 
     const updated = newGroups.find((g) => g.id === id);
-    if (updated) await repo.saveGroup(updated);
+    if (updated) {
+      try {
+        await repo.saveGroup(updated);
+      } catch (err) {
+        set({ persistError: err instanceof Error ? err.message : 'Failed to update group' });
+      }
+    }
   },
 
   removeGroup: async (id: string) => {
@@ -272,12 +321,16 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       lastSavedAt: new Date(),
     });
 
-    await repo.deleteGroup(id);
-    for (const t of newTasks.filter((t) => !t.groupId)) {
-      const original = state.tasks.find((o) => o.id === t.id);
-      if (original?.groupId === id) {
-        await repo.saveTask(t);
+    try {
+      await repo.deleteGroup(id);
+      for (const t of newTasks.filter((t) => !t.groupId)) {
+        const original = state.tasks.find((o) => o.id === t.id);
+        if (original?.groupId === id) {
+          await repo.saveTask(t);
+        }
       }
+    } catch (err) {
+      set({ persistError: err instanceof Error ? err.message : 'Failed to remove group' });
     }
   },
 
@@ -295,5 +348,9 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
   setZoomLevel: (level: ZoomLevel) => {
     set({ zoomLevel: level });
+  },
+
+  dismissError: () => {
+    set({ persistError: null, hydrationError: null });
   },
 }));

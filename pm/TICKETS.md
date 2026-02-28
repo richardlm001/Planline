@@ -35,10 +35,10 @@ Each ticket is a self-contained unit of work.
 | T-023 | [Duplicate dependency prevention](T-023-duplicate-dependency-prevention.md) | S | High | Done |
 | T-024 | [Import validation insufficient](T-024-import-validation-insufficient.md) | M | High | Done |
 | T-025 | [Import operation not atomic](T-025-import-not-atomic.md) | S | High | Done |
-| T-026 | [No error handling on async actions](T-026-no-error-handling-async-actions.md) | L | High | Backlog |
+| T-026 | [No error handling on async actions](T-026-no-error-handling-async-actions.md) | L | High | Done |
 | T-027 | [SortOrder fragmentation](T-027-sortorder-fragmentation.md) | S | Medium | Done |
 | T-028 | [Month zoom pixelsPerDay inaccurate](T-028-month-zoom-pixels-per-day.md) | M | Medium | Done |
-| T-029 | [Dependency arrows + collapsed groups](T-029-dependency-arrows-collapsed-groups.md) | M | Medium | Backlog |
+| T-029 | [Dependency arrows + collapsed groups](T-029-dependency-arrows-collapsed-groups.md) | M | Medium | Done |
 | T-030 | [Drag uses computedStart vs startDayIndex](T-030-drag-computed-vs-stored-start.md) | M | Medium | Done |
 | T-031 | [Scheduler runs unnecessarily](T-031-scheduler-runs-unnecessarily.md) | S | Medium | Done |
 | T-032 | [Unmemoized sort/filter in components](T-032-unmemoized-sort-filter.md) | S | Medium | Done |
@@ -46,4 +46,4 @@ Each ticket is a self-contained unit of work.
 | T-034 | [Today index stale after midnight](T-034-today-index-stale-after-midnight.md) | S | Medium | Done |
 | T-035 | [SVG marker ID collision risk](T-035-svg-marker-id-collision.md) | S | Medium | Done |
 | T-036 | [Keyboard hook sortedTasks not memoized](T-036-keyboard-hook-sortedtasks-not-memoized.md) | S | Medium | Done |
-| T-037 | [Expand test coverage](T-037-expand-test-coverage.md) | L | Medium | Backlog |
+| T-037 | [Expand test coverage](T-037-expand-test-coverage.md) | L | Medium | Done |

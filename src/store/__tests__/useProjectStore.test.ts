@@ -15,8 +15,12 @@ beforeEach(async () => {
     scheduleError: null,
     cycleTaskIds: [],
     selectedTaskId: null,
+    editingTaskId: null,
+    linkingFromTaskId: null,
     lastSavedAt: null,
     isLoaded: false,
+    hydrationError: null,
+    persistError: null,
   });
 });
 
@@ -70,5 +74,171 @@ describe('useProjectStore', () => {
     expect(state.tasks).toHaveLength(1);
     expect(state.tasks[0].name).toBe('Persisted task');
     expect(state.isLoaded).toBe(true);
+  });
+
+  // --- Additional store action tests (T-037) ---
+
+  it('updateTask updates name without rescheduling', async () => {
+    const task = await useProjectStore.getState().addTask({ name: 'Original', startDayIndex: 5 });
+
+    await useProjectStore.getState().updateTask(task.id, { name: 'Renamed' });
+
+    const state = useProjectStore.getState();
+    expect(state.tasks[0].name).toBe('Renamed');
+    expect(state.lastSavedAt).toBeTruthy();
+  });
+
+  it('updateTask reschedules when durationDays changes', async () => {
+    const taskA = await useProjectStore.getState().addTask({ name: 'A', startDayIndex: 0, durationDays: 3 });
+    const taskB = await useProjectStore.getState().addTask({ name: 'B', startDayIndex: 5, durationDays: 2 });
+    await useProjectStore.getState().addDependency(taskA.id, taskB.id);
+
+    // B should be pushed to at least day 3 (A ends at 0+3)
+    let state = useProjectStore.getState();
+    expect(state.computedStarts.get(taskB.id)).toBeGreaterThanOrEqual(3);
+
+    // Resize A to 5 days — B should now be at >= 5
+    await useProjectStore.getState().updateTask(taskA.id, { durationDays: 5 });
+    state = useProjectStore.getState();
+    expect(state.computedStarts.get(taskB.id)).toBeGreaterThanOrEqual(5);
+  });
+
+  it('removeTask removes task and its dependencies', async () => {
+    const taskA = await useProjectStore.getState().addTask({ name: 'A', startDayIndex: 0 });
+    const taskB = await useProjectStore.getState().addTask({ name: 'B', startDayIndex: 5 });
+    await useProjectStore.getState().addDependency(taskA.id, taskB.id);
+
+    expect(useProjectStore.getState().tasks).toHaveLength(2);
+    expect(useProjectStore.getState().dependencies).toHaveLength(1);
+
+    await useProjectStore.getState().removeTask(taskA.id);
+
+    const state = useProjectStore.getState();
+    expect(state.tasks).toHaveLength(1);
+    expect(state.tasks[0].id).toBe(taskB.id);
+    expect(state.dependencies).toHaveLength(0);
+  });
+
+  it('removeTask deselects if the removed task was selected', async () => {
+    const task = await useProjectStore.getState().addTask({ name: 'Test' });
+    useProjectStore.getState().selectTask(task.id);
+    expect(useProjectStore.getState().selectedTaskId).toBe(task.id);
+
+    await useProjectStore.getState().removeTask(task.id);
+    expect(useProjectStore.getState().selectedTaskId).toBeNull();
+  });
+
+  it('addDependency rejects self-dependency', async () => {
+    const task = await useProjectStore.getState().addTask({ name: 'A' });
+    const result = await useProjectStore.getState().addDependency(task.id, task.id);
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('self');
+  });
+
+  it('addDependency rejects duplicate dependency', async () => {
+    const taskA = await useProjectStore.getState().addTask({ name: 'A', startDayIndex: 0 });
+    const taskB = await useProjectStore.getState().addTask({ name: 'B', startDayIndex: 5 });
+    await useProjectStore.getState().addDependency(taskA.id, taskB.id);
+
+    const result = await useProjectStore.getState().addDependency(taskA.id, taskB.id);
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('exists');
+  });
+
+  it('removeDependency removes a dependency and reschedules', async () => {
+    const taskA = await useProjectStore.getState().addTask({ name: 'A', startDayIndex: 0, durationDays: 3 });
+    const taskB = await useProjectStore.getState().addTask({ name: 'B', startDayIndex: 1, durationDays: 2 });
+    await useProjectStore.getState().addDependency(taskA.id, taskB.id);
+
+    const depId = useProjectStore.getState().dependencies[0].id;
+    await useProjectStore.getState().removeDependency(depId);
+
+    const state = useProjectStore.getState();
+    expect(state.dependencies).toHaveLength(0);
+  });
+
+  it('selectTask sets and clears selectedTaskId', () => {
+    useProjectStore.getState().selectTask('some-id');
+    expect(useProjectStore.getState().selectedTaskId).toBe('some-id');
+
+    useProjectStore.getState().selectTask(null);
+    expect(useProjectStore.getState().selectedTaskId).toBeNull();
+  });
+
+  it('updateProject updates project fields', async () => {
+    await useProjectStore.getState().updateProject({ name: 'My Project' });
+
+    const state = useProjectStore.getState();
+    expect(state.project.name).toBe('My Project');
+    expect(state.lastSavedAt).toBeTruthy();
+  });
+
+  it('addGroup creates a group with auto-incrementing sortOrder', async () => {
+    const g1 = await useProjectStore.getState().addGroup({ name: 'Group 1' });
+    const g2 = await useProjectStore.getState().addGroup({ name: 'Group 2' });
+
+    expect(g1.sortOrder).toBe(0);
+    expect(g2.sortOrder).toBe(1);
+    expect(useProjectStore.getState().groups).toHaveLength(2);
+  });
+
+  it('updateGroup updates group name', async () => {
+    const group = await useProjectStore.getState().addGroup({ name: 'Original' });
+
+    await useProjectStore.getState().updateGroup(group.id, { name: 'Renamed' });
+
+    const state = useProjectStore.getState();
+    expect(state.groups[0].name).toBe('Renamed');
+  });
+
+  it('updateGroup toggles collapsed state', async () => {
+    const group = await useProjectStore.getState().addGroup({ name: 'Test' });
+    expect(group.collapsed).toBe(false);
+
+    await useProjectStore.getState().updateGroup(group.id, { collapsed: true });
+    expect(useProjectStore.getState().groups[0].collapsed).toBe(true);
+
+    await useProjectStore.getState().updateGroup(group.id, { collapsed: false });
+    expect(useProjectStore.getState().groups[0].collapsed).toBe(false);
+  });
+
+  it('removeGroup removes group and ungroups its tasks', async () => {
+    const group = await useProjectStore.getState().addGroup({ name: 'My Group' });
+    const task = await useProjectStore.getState().addTask({ name: 'Task', groupId: group.id });
+
+    expect(useProjectStore.getState().tasks[0].groupId).toBe(group.id);
+
+    await useProjectStore.getState().removeGroup(group.id);
+
+    const state = useProjectStore.getState();
+    expect(state.groups).toHaveLength(0);
+    expect(state.tasks[0].groupId).toBeUndefined();
+  });
+
+  it('setEditingTaskId sets editing task', () => {
+    useProjectStore.getState().setEditingTaskId('t1');
+    expect(useProjectStore.getState().editingTaskId).toBe('t1');
+
+    useProjectStore.getState().setEditingTaskId(null);
+    expect(useProjectStore.getState().editingTaskId).toBeNull();
+  });
+
+  it('setLinkingFromTaskId sets linking state', () => {
+    useProjectStore.getState().setLinkingFromTaskId('t1');
+    expect(useProjectStore.getState().linkingFromTaskId).toBe('t1');
+
+    useProjectStore.getState().setLinkingFromTaskId(null);
+    expect(useProjectStore.getState().linkingFromTaskId).toBeNull();
+  });
+
+  it('setZoomLevel changes zoom', () => {
+    useProjectStore.getState().setZoomLevel('week');
+    expect(useProjectStore.getState().zoomLevel).toBe('week');
+
+    useProjectStore.getState().setZoomLevel('month');
+    expect(useProjectStore.getState().zoomLevel).toBe('month');
+
+    useProjectStore.getState().setZoomLevel('day');
+    expect(useProjectStore.getState().zoomLevel).toBe('day');
   });
 });
