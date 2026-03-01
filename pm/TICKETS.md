@@ -59,3 +59,4 @@ Each ticket is a self-contained unit of work.
 | T-042 | [Zoom future dates empty](T-042-zoom-future-dates-empty.md) | S | High | Done |
 | T-043 | [Curved dependency arrow lines](T-043-curved-dependency-arrows.md) | S | Medium | Done |
 | T-044 | [Right-edge resize blocked by connector](T-044-resize-blocked-by-connector.md) | S | High | Done |
+| T-045 | [Dev/QA debug panel](T-045-debug-panel.md) | M | Low | Done |

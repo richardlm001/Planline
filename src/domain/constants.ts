@@ -20,16 +20,16 @@ export function todayDayIndex(): number {
 
 /** Curated color palette for task bars (soft/pastel tones) */
 export const COLOR_PALETTE = [
-  '#93B5F7', // soft blue
-  '#7DD3B6', // soft emerald
-  '#FCD077', // soft amber
-  '#F9A8A8', // soft coral
-  '#BFA8F7', // soft violet
-  '#F4A8CC', // soft pink
-  '#7DD8E8', // soft cyan
-  '#FCBB7D', // soft orange
-  '#7DD3C4', // soft teal
-  '#A5A7F5', // soft indigo
+  '#C8D9FA', // pastel blue
+  '#B8E8D5', // pastel mint
+  '#FAE6A8', // pastel yellow
+  '#F7C5C5', // pastel coral
+  '#D6C8F7', // pastel lavender
+  '#F5C6DD', // pastel pink
+  '#B8E8EE', // pastel cyan
+  '#F7D6B3', // pastel peach
+  '#B8E4D8', // pastel teal
+  '#C5C7F5', // pastel indigo
 ];
 
 /** Default values for new entities */

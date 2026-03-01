@@ -6,6 +6,7 @@ import { SidebarGroupRow } from './SidebarGroupRow';
 import { ProjectHeader } from './ProjectHeader';
 import { ExportImportButtons } from './ExportImportButtons';
 import { SavedIndicator } from './SavedIndicator';
+import { DebugButton } from './debug/DebugButton';
 
 export function Sidebar() {
   const tasks = useProjectStore((s) => s.tasks);
@@ -79,6 +80,7 @@ export function Sidebar() {
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const dropTargetId = dragOverItemId;
     const dropTargetType = dragOverType;
     setDragOverItemId(null);
@@ -206,6 +208,7 @@ export function Sidebar() {
         })}
       </div>
       <SavedIndicator />
+      <DebugButton />
     </div>
   );
 }

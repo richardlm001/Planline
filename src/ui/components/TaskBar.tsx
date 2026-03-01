@@ -197,7 +197,7 @@ export const TaskBar = memo(function TaskBar({
 
   return (
     <div
-      className={`absolute rounded-md shadow-sm border flex items-center text-xs text-white font-medium select-none group ${
+      className={`absolute rounded-md shadow-sm border flex items-center text-xs text-gray-700 font-medium select-none group ${
         isDragging ? 'cursor-grabbing opacity-80' : 'cursor-grab'
       } ${isSelected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-black/10'}`}
       style={{
@@ -205,7 +205,7 @@ export const TaskBar = memo(function TaskBar({
         width,
         top: displayTop,
         height: BAR_HEIGHT,
-        backgroundColor: task.color,
+        backgroundColor: `color-mix(in srgb, ${task.color} 45%, white)`,
         zIndex: isDragging ? 50 : undefined,
       }}
       title={task.name}

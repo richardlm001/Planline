@@ -97,7 +97,7 @@ describe('TaskBar', () => {
   it('shows task color as background', () => {
     const { container } = render(<TaskBar {...defaultProps} />);
     const bar = container.firstElementChild as HTMLElement;
-    expect(bar.style.backgroundColor).toBe('rgb(59, 130, 246)');
+    expect(bar.style.backgroundColor).toBe('color-mix(in srgb, rgb(59, 130, 246) 45%, white)');
   });
 
   it('uses computedStart for positioning rather than task.startDayIndex', () => {
