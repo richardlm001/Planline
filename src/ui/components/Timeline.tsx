@@ -6,7 +6,6 @@ import { TimelineHeader } from './TimelineHeader';
 import { TimelineBody } from './TimelineBody';
 import { TodayLine } from './TodayLine';
 import { LinkingLine } from './LinkingLine';
-import { ZoomToggle } from './ZoomToggle';
 import { ZOOM_CONFIGS, HEADER_HEIGHT, TOOLBAR_HEIGHT, getVisibleDays } from '../constants';
 
 function useTodayIndex(): number {
@@ -43,9 +42,10 @@ export interface TimelineColumn {
 
 interface TimelineProps {
   scrollRef?: React.RefObject<HTMLDivElement | null>;
+  sidebarWidth?: number;
 }
 
-export function Timeline({ scrollRef: scrollRefProp }: TimelineProps) {
+export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: TimelineProps) {
   const internalRef = useRef<HTMLDivElement>(null);
   const scrollRef = scrollRefProp ?? internalRef;
   const zoomLevel = useProjectStore((s) => s.zoomLevel);
@@ -59,11 +59,11 @@ export function Timeline({ scrollRef: scrollRefProp }: TimelineProps) {
   const [containerWidth, setContainerWidth] = useState(1920);
   useEffect(() => {
     if (scrollRef.current) {
-      setContainerWidth(scrollRef.current.clientWidth);
+      setContainerWidth(scrollRef.current.clientWidth - sidebarWidth);
     }
     const handleResize = () => {
       if (scrollRef.current) {
-        setContainerWidth(scrollRef.current.clientWidth);
+        setContainerWidth(scrollRef.current.clientWidth - sidebarWidth);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -187,52 +187,44 @@ export function Timeline({ scrollRef: scrollRefProp }: TimelineProps) {
   useEffect(() => {
     if (scrollRef.current) {
       const todayPx = dayToPixel(today);
-      const containerWidth = scrollRef.current.clientWidth;
-      scrollRef.current.scrollLeft = todayPx - containerWidth * 0.2;
+      const timelineViewport = scrollRef.current.clientWidth - sidebarWidth;
+      scrollRef.current.scrollLeft = todayPx - timelineViewport * 0.2;
     }
     prevZoomRef.current = zoomLevel;
   }, [today, dayToPixel, zoomLevel]);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar with zoom toggle — explicit height to match sidebar toolbar */}
-      <div className="flex items-center justify-end px-3 border-b border-gray-200 bg-white flex-shrink-0" style={{ height: TOOLBAR_HEIGHT }}>
-        <ZoomToggle />
-      </div>
-      <div ref={scrollRef} data-testid="timeline-scroll" className="flex-1 overflow-x-auto overflow-y-auto">
-        <div style={{ width: totalWidth, minHeight: '100%' }} className="relative">
-          <TimelineHeader columns={columns} columnWidth={columnWidth} />
-          <div className="relative" style={{ marginTop: 0 }} onClick={handleCanvasClick}>
-            {/* Grid lines */}
-            {columns.map((col, i) => (
-              <div
-                key={col.dayIndex}
-                className={`absolute top-0 bottom-0 border-r ${
-                  col.isWeekend ? 'bg-gray-50' : ''
-                } border-gray-100`}
-                style={{
-                  left: i * columnWidth,
-                  width: columnWidth,
-                  height: '100%',
-                  minHeight: 'calc(100vh - ' + HEADER_HEIGHT + 'px)',
-                }}
-              />
-            ))}
-            {/* Task bars */}
-            <TimelineBody
-              columnWidth={columnWidth}
-              rangeStartDayIndex={rangeStartDayIndex}
-              pixelsPerDay={pixelsPerDay}
-              dayToPixel={dayToPixel}
-            />
+    <div style={{ width: totalWidth, minHeight: '100%' }} className="relative">
+      <TimelineHeader columns={columns} columnWidth={columnWidth} />
+      <div className="relative" style={{ marginTop: 0 }} onClick={handleCanvasClick}>
+        {/* Grid lines */}
+        {columns.map((col, i) => (
+          <div
+            key={col.dayIndex}
+            className={`absolute top-0 bottom-0 border-r ${
+              col.isWeekend ? 'bg-gray-50' : ''
+            } border-gray-100`}
+            style={{
+              left: i * columnWidth,
+              width: columnWidth,
+              height: '100%',
+              minHeight: 'calc(100vh - ' + (TOOLBAR_HEIGHT + HEADER_HEIGHT) + 'px)',
+            }}
+          />
+        ))}
+        {/* Task bars */}
+        <TimelineBody
+          columnWidth={columnWidth}
+          rangeStartDayIndex={rangeStartDayIndex}
+          pixelsPerDay={pixelsPerDay}
+          dayToPixel={dayToPixel}
+        />
 
-            {/* Today line */}
-            <TodayLine dayToPixel={dayToPixel} />
+        {/* Today line */}
+        <TodayLine dayToPixel={dayToPixel} />
 
-            {/* Linking drag line */}
-            <LinkingLine dayToPixel={dayToPixel} scrollContainer={scrollRef.current} />
-          </div>
-        </div>
+        {/* Linking drag line */}
+        <LinkingLine dayToPixel={dayToPixel} scrollContainer={scrollRef.current} sidebarWidth={sidebarWidth} />
       </div>
     </div>
   );

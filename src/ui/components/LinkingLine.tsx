@@ -6,11 +6,12 @@ import { BAR_HEIGHT } from './TaskBar';
 interface LinkingLineProps {
   dayToPixel: (dayIndex: number) => number;
   scrollContainer: HTMLElement | null;
+  sidebarWidth?: number;
 }
 
 const BAR_VERTICAL_PADDING = (ROW_HEIGHT - BAR_HEIGHT) / 2;
 
-export function LinkingLine({ dayToPixel, scrollContainer }: LinkingLineProps) {
+export function LinkingLine({ dayToPixel, scrollContainer, sidebarWidth = 250 }: LinkingLineProps) {
   const linkingFromTaskId = useProjectStore((s) => s.linkingFromTaskId);
   const setLinkingFromTaskId = useProjectStore((s) => s.setLinkingFromTaskId);
   const tasks = useProjectStore((s) => s.tasks);
@@ -48,7 +49,7 @@ export function LinkingLine({ dayToPixel, scrollContainer }: LinkingLineProps) {
       if (!scrollContainer) return;
       const rect = scrollContainer.getBoundingClientRect();
       setCursorPos({
-        x: e.clientX - rect.left + scrollContainer.scrollLeft,
+        x: e.clientX - rect.left + scrollContainer.scrollLeft - sidebarWidth,
         y: e.clientY - rect.top + scrollContainer.scrollTop,
       });
     },

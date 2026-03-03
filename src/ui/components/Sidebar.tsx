@@ -1,18 +1,16 @@
 import { useCallback, useMemo, useState } from 'react';
-import { HEADER_HEIGHT, TOOLBAR_HEIGHT } from '../constants';
+import { HEADER_HEIGHT } from '../constants';
 import { useProjectStore } from '../../store/useProjectStore';
 import { SidebarTaskRow } from './SidebarTaskRow';
 import { SidebarGroupRow } from './SidebarGroupRow';
-import { ProjectHeader } from './ProjectHeader';
-import { ExportImportButtons } from './ExportImportButtons';
 import { SavedIndicator } from './SavedIndicator';
 import { DebugButton } from './debug/DebugButton';
 
 interface SidebarProps {
-  scrollRef?: React.RefObject<HTMLDivElement | null>;
+  width: number;
 }
 
-export function Sidebar({ scrollRef }: SidebarProps) {
+export function Sidebar({ width }: SidebarProps) {
   const tasks = useProjectStore((s) => s.tasks);
   const groups = useProjectStore((s) => s.groups);
   const selectedTaskIds = useProjectStore((s) => s.selectedTaskIds);
@@ -140,18 +138,18 @@ export function Sidebar({ scrollRef }: SidebarProps) {
   }, [sortedTasks.length, moveTasksToPosition]);
 
   return (
-    <div className="flex flex-col h-full" onDragEnd={handleDragEnd}>
-      {/* Project name — explicit height to match timeline toolbar */}
-      <div className="flex items-center justify-between px-3 border-b border-gray-200 flex-shrink-0" style={{ height: TOOLBAR_HEIGHT }}>
-        <ProjectHeader />
-        <ExportImportButtons />
-      </div>
-      <div ref={scrollRef} data-testid="sidebar-scroll" className="flex-1 overflow-y-auto" onDragOver={handleListDragOver} onDrop={handleListDrop}>
-        {/* Sticky Tasks header — mirrors TimelineHeader inside scroll area */}
-        <div
-          className="sticky top-0 z-10 bg-gray-50 flex items-center justify-between px-3 font-semibold text-sm text-gray-500 border-b border-gray-200"
-          style={{ height: HEADER_HEIGHT }}
-        >
+    <div
+      className="sticky left-0 z-30 bg-gray-50 border-r border-gray-200 flex-shrink-0"
+      style={{ width }}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleListDragOver}
+      onDrop={handleListDrop}
+    >
+      {/* Sticky Tasks header (corner pin: sticky top + left) */}
+      <div
+        className="sticky top-0 z-40 bg-gray-50 flex items-center justify-between px-3 font-semibold text-sm text-gray-500 border-b border-gray-200"
+        style={{ height: HEADER_HEIGHT }}
+      >
           <span>Tasks</span>
           <div className="flex gap-1">
             <button
@@ -213,7 +211,6 @@ export function Sidebar({ scrollRef }: SidebarProps) {
         })}
         <SavedIndicator />
         <DebugButton />
-      </div>
     </div>
   );
 }

@@ -28,7 +28,7 @@ beforeEach(async () => {
 
 describe('Add Task', () => {
   it('clicking "Add task" button creates a task with correct defaults', async () => {
-    render(<Sidebar />);
+    render(<Sidebar width={250} />);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('add-task-btn'));
@@ -47,7 +47,7 @@ describe('Add Task', () => {
   });
 
   it('new task appears in the sidebar', async () => {
-    render(<Sidebar />);
+    render(<Sidebar width={250} />);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('add-task-btn'));

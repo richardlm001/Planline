@@ -29,14 +29,14 @@ beforeEach(() => {
 
 describe('Task Groups', () => {
   it('renders group with children', () => {
-    render(<Sidebar />);
+    render(<Sidebar width={250} />);
     expect(screen.getByText('My Group')).toBeTruthy();
     expect(screen.getByText('Grouped A')).toBeTruthy();
     expect(screen.getByText('Grouped B')).toBeTruthy();
   });
 
   it('collapsing a group hides its children', () => {
-    render(<Sidebar />);
+    render(<Sidebar width={250} />);
     // Click the collapse toggle
     const toggle = screen.getByTestId('group-toggle-g1');
     fireEvent.click(toggle);
@@ -49,7 +49,7 @@ describe('Task Groups', () => {
   });
 
   it('ungrouped tasks are still visible', () => {
-    render(<Sidebar />);
+    render(<Sidebar width={250} />);
     expect(screen.getByText('Ungrouped')).toBeTruthy();
   });
 });

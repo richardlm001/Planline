@@ -11,7 +11,9 @@ export const ZOOM_CONFIGS: Record<ZoomLevel, ZoomConfig> = {
   month: { columnWidth: 60, daysPerColumn: 30 },
 };
 
-export const SIDEBAR_WIDTH = 260;
+export const SIDEBAR_WIDTH = 250;
+export const MIN_SIDEBAR_WIDTH = 250;
+export const MAX_SIDEBAR_WIDTH = 600;
 export const ROW_HEIGHT = 40;
 export const HEADER_HEIGHT = 48;
 export const TOOLBAR_HEIGHT = 37;

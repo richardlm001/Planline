@@ -1,9 +1,12 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { Sidebar } from './components/Sidebar';
 import { Timeline } from './components/Timeline';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { SIDEBAR_WIDTH } from './constants';
+import { ProjectHeader } from './components/ProjectHeader';
+import { ExportImportButtons } from './components/ExportImportButtons';
+import { ZoomToggle } from './components/ZoomToggle';
+import { SIDEBAR_WIDTH, TOOLBAR_HEIGHT, MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH } from './constants';
 
 function App() {
   const isLoaded = useProjectStore((s) => s.isLoaded);
@@ -13,8 +16,9 @@ function App() {
   const dismissError = useProjectStore((s) => s.dismissError);
   const setLinkingFromTaskId = useProjectStore((s) => s.setLinkingFromTaskId);
   const hasHydrated = useRef(false);
-  const sidebarScrollRef = useRef<HTMLDivElement>(null);
-  const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_WIDTH);
+  const isResizing = useRef(false);
 
   useKeyboardShortcuts();
 
@@ -37,36 +41,26 @@ function App() {
     };
   }, [handleGlobalPointerUp]);
 
-  // Sync vertical scroll between sidebar task list and timeline
-  useEffect(() => {
-    const sidebar = sidebarScrollRef.current;
-    const timeline = timelineScrollRef.current;
-    if (!sidebar || !timeline) return;
+  // --- Sidebar resize handlers ---
+  const handleResizePointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
 
-    let scrollingEl: HTMLDivElement | null = null;
+  const handleResizePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isResizing.current) return;
+    const newWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, e.clientX));
+    setSidebarWidth(newWidth);
+  }, []);
 
-    const handleSidebarScroll = () => {
-      if (scrollingEl && scrollingEl !== sidebar) return;
-      scrollingEl = sidebar;
-      timeline.scrollTop = sidebar.scrollTop;
-      requestAnimationFrame(() => { scrollingEl = null; });
-    };
-
-    const handleTimelineScroll = () => {
-      if (scrollingEl && scrollingEl !== timeline) return;
-      scrollingEl = timeline;
-      sidebar.scrollTop = timeline.scrollTop;
-      requestAnimationFrame(() => { scrollingEl = null; });
-    };
-
-    sidebar.addEventListener('scroll', handleSidebarScroll);
-    timeline.addEventListener('scroll', handleTimelineScroll);
-
-    return () => {
-      sidebar.removeEventListener('scroll', handleSidebarScroll);
-      timeline.removeEventListener('scroll', handleTimelineScroll);
-    };
-  }, [isLoaded]);
+  const handleResizePointerUp = useCallback(() => {
+    isResizing.current = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, []);
 
   if (!isLoaded) {
     return (
@@ -94,7 +88,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white text-gray-900">
+    <div className="flex flex-col h-screen overflow-hidden bg-white text-gray-900 relative">
       {persistError && (
         <div className="fixed top-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded shadow-lg max-w-sm" data-testid="persist-error-toast">
           <div className="flex items-start gap-2">
@@ -106,14 +100,36 @@ function App() {
           </div>
         </div>
       )}
-      <div
-        className="flex-shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col"
-        style={{ width: SIDEBAR_WIDTH }}
-      >
-        <Sidebar scrollRef={sidebarScrollRef} />
+      {/* Fixed toolbar row */}
+      <div className="flex flex-shrink-0 border-b border-gray-200" style={{ height: TOOLBAR_HEIGHT }}>
+        <div
+          className="flex items-center justify-between px-3 border-r border-gray-200 bg-gray-50 flex-shrink-0"
+          style={{ width: sidebarWidth }}
+        >
+          <ProjectHeader />
+          <ExportImportButtons />
+        </div>
+        <div className="flex items-center justify-end px-3 flex-1 bg-white">
+          <ZoomToggle />
+        </div>
       </div>
-      <div className="flex-1 overflow-hidden">
-        <Timeline scrollRef={timelineScrollRef} />
+      {/* Single scroll container */}
+      <div ref={scrollRef} data-testid="main-scroll" className="flex-1 overflow-auto">
+        <div className="flex w-max min-h-full">
+          <Sidebar width={sidebarWidth} />
+          <Timeline scrollRef={scrollRef} sidebarWidth={sidebarWidth} />
+        </div>
+      </div>
+      {/* Sidebar resize handle */}
+      <div
+        className="absolute top-0 bottom-0 w-1.5 cursor-col-resize z-50 group"
+        style={{ left: sidebarWidth - 3 }}
+        onPointerDown={handleResizePointerDown}
+        onPointerMove={handleResizePointerMove}
+        onPointerUp={handleResizePointerUp}
+        data-testid="sidebar-resize-handle"
+      >
+        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-transparent group-hover:bg-blue-400 transition-colors" />
       </div>
     </div>
   );
