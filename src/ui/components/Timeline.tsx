@@ -173,12 +173,12 @@ export function Timeline() {
 
   const prevZoomRef = useRef(zoomLevel);
 
-  // Scroll to center on today on mount and when zoom changes
+  // Scroll so today appears at ~20% from the left edge on mount and when zoom changes
   useEffect(() => {
     if (scrollRef.current) {
       const todayPx = dayToPixel(today);
       const containerWidth = scrollRef.current.clientWidth;
-      scrollRef.current.scrollLeft = todayPx - containerWidth / 2;
+      scrollRef.current.scrollLeft = todayPx - containerWidth * 0.2;
     }
     prevZoomRef.current = zoomLevel;
   }, [today, dayToPixel, zoomLevel]);
