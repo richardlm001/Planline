@@ -80,12 +80,15 @@ describe('LinkingLine', () => {
       const svg = queryByTestId('linking-line');
       expect(svg).not.toBeNull();
 
-      const line = svg!.querySelector('line')!;
-      const y1 = parseFloat(line.getAttribute('y1')!);
+      const path = svg!.querySelector('path')!;
+      const d = path.getAttribute('d')!;
 
       // Task is in group g1, so group header is row 0, task is row 1
       const expectedY = 1 * ROW_HEIGHT + BAR_VERTICAL_PADDING + BAR_HEIGHT / 2;
-      expect(y1).toBe(expectedY);
+      // Path starts with M sx sy — extract the starting Y
+      const match = d.match(/^M (\S+) (\S+)/);
+      expect(match).not.toBeNull();
+      expect(parseFloat(match![2])).toBe(expectedY);
     });
 
     it('places ungrouped task at row 0 (no group header offset)', () => {
@@ -123,12 +126,14 @@ describe('LinkingLine', () => {
       const svg = queryByTestId('linking-line');
       expect(svg).not.toBeNull();
 
-      const line = svg!.querySelector('line')!;
-      const y1 = parseFloat(line.getAttribute('y1')!);
+      const path = svg!.querySelector('path')!;
+      const d = path.getAttribute('d')!;
 
       // No group headers, task is at row 0
       const expectedY = 0 * ROW_HEIGHT + BAR_VERTICAL_PADDING + BAR_HEIGHT / 2;
-      expect(y1).toBe(expectedY);
+      const match = d.match(/^M (\S+) (\S+)/);
+      expect(match).not.toBeNull();
+      expect(parseFloat(match![2])).toBe(expectedY);
     });
   });
 
@@ -170,14 +175,20 @@ describe('LinkingLine', () => {
       const svg = queryByTestId('linking-line');
       expect(svg).not.toBeNull();
 
-      const line = svg!.querySelector('line')!;
-      const x2 = parseFloat(line.getAttribute('x2')!);
-      const y2 = parseFloat(line.getAttribute('y2')!);
+      const path = svg!.querySelector('path')!;
+      const d = path.getAttribute('d')!;
+
+      // The path ends at the cursor position — extract the last L tx ty segment
+      const segments = d.split(' L ');
+      const lastSegment = segments[segments.length - 1];
+      const [endXStr, endYStr] = lastSegment.split(' ');
+      const endX = parseFloat(endXStr);
+      const endY = parseFloat(endYStr);
 
       // x: clientX(600) - rect.left(50) + scrollLeft(0) - sidebarWidth(250) = 300
-      expect(x2).toBe(300);
+      expect(endX).toBe(300);
       // y: clientY(300) - rect.top(100) + scrollTop(0) - HEADER_HEIGHT(48) = 152
-      expect(y2).toBe(300 - 100 - HEADER_HEIGHT);
+      expect(endY).toBe(300 - 100 - HEADER_HEIGHT);
     });
   });
 });

@@ -211,43 +211,43 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
       <defs>
         <marker
           id={markerId}
-          markerWidth="8"
-          markerHeight="6"
-          refX="8"
-          refY="3"
+          markerWidth="5"
+          markerHeight="4"
+          refX="5"
+          refY="2"
           orient="auto"
         >
-          <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF" fillOpacity="0.3" />
+          <polygon points="0 0, 5 2, 0 4" fill="#9CA3AF" fillOpacity="0.3" />
         </marker>
         <marker
           id={`${markerId}-hovered`}
-          markerWidth="8"
-          markerHeight="6"
-          refX="8"
-          refY="3"
+          markerWidth="5"
+          markerHeight="4"
+          refX="5"
+          refY="2"
           orient="auto"
         >
-          <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF" />
+          <polygon points="0 0, 5 2, 0 4" fill="#9CA3AF" />
         </marker>
         <marker
           id={`${markerId}-selected`}
-          markerWidth="8"
-          markerHeight="6"
-          refX="8"
-          refY="3"
+          markerWidth="5"
+          markerHeight="4"
+          refX="5"
+          refY="2"
           orient="auto"
         >
-          <polygon points="0 0, 8 3, 0 6" fill="#3B82F6" />
+          <polygon points="0 0, 5 2, 0 4" fill="#3B82F6" />
         </marker>
         <marker
           id={dashedMarkerId}
-          markerWidth="8"
-          markerHeight="6"
-          refX="8"
-          refY="3"
+          markerWidth="5"
+          markerHeight="4"
+          refX="5"
+          refY="2"
           orient="auto"
         >
-          <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF" fillOpacity="0.2" />
+          <polygon points="0 0, 5 2, 0 4" fill="#9CA3AF" fillOpacity="0.2" />
         </marker>
       </defs>
       {arrows}

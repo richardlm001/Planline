@@ -80,7 +80,32 @@ export function LinkingLine({ dayToPixel, scrollContainer, sidebarWidth = 250 }:
     };
   }, [linkingFromTaskId, handlePointerMove, handlePointerUp]);
 
+  /**
+   * Build a rounded-corner Z-shaped path from (sx, sy) to (tx, ty) via a midX elbow.
+   * Matches the arrow path style used in DependencyArrows.
+   */
+  const buildArrowPath = (sx: number, sy: number, tx: number, ty: number): string => {
+    const midX = sx + 12;
+    if (sy === ty) {
+      return `M ${sx} ${sy} L ${tx} ${ty}`;
+    }
+    const dy = ty - sy;
+    const absDy = Math.abs(dy);
+    const dirY = dy > 0 ? 1 : -1;
+    const r = Math.min(10, absDy / 2, Math.abs(midX - sx) / 2, Math.abs(tx - midX) / 2);
+    return [
+      `M ${sx} ${sy}`,
+      `L ${midX - r} ${sy}`,
+      `Q ${midX} ${sy} ${midX} ${sy + r * dirY}`,
+      `L ${midX} ${ty - r * dirY}`,
+      `Q ${midX} ${ty} ${midX + r} ${ty}`,
+      `L ${tx} ${ty}`,
+    ].join(' ');
+  };
+
   if (!linkingFromTaskId || !sourcePoint || !cursorPos) return null;
+
+  const arrowPath = buildArrowPath(sourcePoint.x, sourcePoint.y, cursorPos.x, cursorPos.y);
 
   return (
     <svg
@@ -88,14 +113,26 @@ export function LinkingLine({ dayToPixel, scrollContainer, sidebarWidth = 250 }:
       style={{ width: '100%', height: '100%', overflow: 'visible' }}
       data-testid="linking-line"
     >
-      <line
-        x1={sourcePoint.x}
-        y1={sourcePoint.y}
-        x2={cursorPos.x}
-        y2={cursorPos.y}
-        stroke="#F59E0B"
-        strokeWidth={2}
+      <defs>
+        <marker
+          id="linking-arrow"
+          markerWidth="5"
+          markerHeight="4"
+          refX="5"
+          refY="2"
+          orient="auto"
+        >
+          <polygon points="0 0, 5 2, 0 4" fill="#9CA3AF" fillOpacity="0.6" />
+        </marker>
+      </defs>
+      <path
+        d={arrowPath}
+        fill="none"
+        stroke="#9CA3AF"
+        strokeWidth={1.5}
+        strokeOpacity={0.6}
         strokeDasharray="6 3"
+        markerEnd="url(#linking-arrow)"
       />
     </svg>
   );
