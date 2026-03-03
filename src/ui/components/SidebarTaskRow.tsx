@@ -80,7 +80,7 @@ export function SidebarTaskRow({ task, indented = false, onDragStart, onDragOver
 
   return (
     <div
-      className={`group flex items-center cursor-pointer select-none text-sm border-b border-gray-100 ${
+      className={`group flex items-center cursor-pointer select-none text-xs border-b border-gray-100 ${
         isSelected ? 'bg-blue-50 text-blue-900' : 'hover:bg-gray-100'
       } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
       style={{ height: ROW_HEIGHT, paddingLeft: indented ? 14 : 6, paddingRight: 12 }}

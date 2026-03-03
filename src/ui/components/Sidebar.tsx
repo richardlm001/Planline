@@ -147,7 +147,7 @@ export function Sidebar({ width }: SidebarProps) {
     >
       {/* Sticky Tasks header (corner pin: sticky top + left) */}
       <div
-        className="sticky top-0 z-40 bg-gray-50 flex items-center justify-between px-3 font-semibold text-sm text-gray-500 border-b border-gray-200"
+        className="sticky top-0 z-40 bg-gray-50 flex items-center justify-between px-3 font-semibold text-xs text-gray-500 border-b border-gray-200"
         style={{ height: HEADER_HEIGHT }}
       >
           <span>Tasks</span>
