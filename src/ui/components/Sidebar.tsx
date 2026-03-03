@@ -4,6 +4,7 @@ import { useProjectStore } from '../../store/useProjectStore';
 import { SidebarTaskRow } from './SidebarTaskRow';
 import { SidebarGroupRow } from './SidebarGroupRow';
 import { SavedIndicator } from './SavedIndicator';
+import { Plus, FolderPlus } from 'lucide-react';
 
 
 interface SidebarProps {
@@ -158,7 +159,7 @@ export function Sidebar({ width }: SidebarProps) {
               title="Add group"
               data-testid="add-group-btn"
             >
-              G+
+              <FolderPlus size={14} />
             </button>
             <button
               onClick={handleAddTask}
@@ -166,7 +167,7 @@ export function Sidebar({ width }: SidebarProps) {
               title="Add task"
               data-testid="add-task-btn"
             >
-              +
+              <Plus size={16} />
             </button>
           </div>
         </div>

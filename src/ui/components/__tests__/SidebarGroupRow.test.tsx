@@ -42,8 +42,8 @@ describe('SidebarGroupRow', () => {
     render(<SidebarGroupRow group={testGroup} />);
     const toggle = screen.getByTestId('group-toggle-g1');
     expect(toggle).toBeTruthy();
-    // Expanded state shows ▾
-    expect(toggle.textContent).toBe('▾');
+    // Expanded state shows ChevronDown icon
+    expect(toggle.querySelector('svg')).toBeTruthy();
   });
 
   it('clicking toggle collapses/expands the group', () => {
@@ -53,12 +53,12 @@ describe('SidebarGroupRow', () => {
     expect(useProjectStore.getState().groups[0].collapsed).toBe(true);
   });
 
-  it('collapsed group shows ▸ indicator', () => {
+  it('collapsed group shows ChevronRight indicator', () => {
     const collapsed = { ...testGroup, collapsed: true };
     useProjectStore.setState({ groups: [collapsed] });
     render(<SidebarGroupRow group={collapsed} />);
     const toggle = screen.getByTestId('group-toggle-g1');
-    expect(toggle.textContent).toBe('▸');
+    expect(toggle.querySelector('svg')).toBeTruthy();
   });
 
   it('double-click enables inline rename', () => {

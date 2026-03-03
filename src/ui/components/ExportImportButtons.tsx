@@ -3,6 +3,7 @@ import { useProjectStore } from '../../store/useProjectStore';
 import { buildExportData, validateImportData, importProject } from '../../db/export';
 import { DebugModal } from './debug/DebugModal';
 import { format } from 'date-fns';
+import { EllipsisVertical } from 'lucide-react';
 
 export function ExportImportButtons() {
   const project = useProjectStore((s) => s.project);
@@ -87,11 +88,7 @@ export function ExportImportButtons() {
         data-testid="project-menu-btn"
         title="Project menu"
       >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="8" cy="3" r="1.5" />
-          <circle cx="8" cy="8" r="1.5" />
-          <circle cx="8" cy="13" r="1.5" />
-        </svg>
+        <EllipsisVertical size={14} />
       </button>
       {isOpen && (
         <div

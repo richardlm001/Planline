@@ -3,6 +3,7 @@ import type { Task } from '../../domain/types';
 import { useProjectStore } from '../../store/useProjectStore';
 import { ColorPicker } from './ColorPicker';
 import { ROW_HEIGHT } from '../constants';
+import { GripVertical } from 'lucide-react';
 
 interface SidebarTaskRowProps {
   task: Task;
@@ -95,8 +96,8 @@ export function SidebarTaskRow({ task, indented = false, onDragStart, onDragOver
       onDrop={onDrop}
     >
       {/* Drag handle */}
-      <div className="flex-shrink-0 cursor-grab text-gray-300 hover:text-gray-500 mr-1 text-xs select-none opacity-0 group-hover:opacity-100 transition-opacity" data-testid={`drag-handle-${task.id}`}>
-        ⠿
+      <div className="flex-shrink-0 cursor-grab text-gray-300 hover:text-gray-500 mr-1 select-none opacity-0 group-hover:opacity-100 transition-opacity" data-testid={`drag-handle-${task.id}`}>
+        <GripVertical size={12} />
       </div>
       <ColorPicker taskId={task.id} currentColor={task.color} />
       <div className="w-2 flex-shrink-0" />

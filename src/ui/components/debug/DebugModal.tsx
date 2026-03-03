@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useProjectStore } from '../../../store/useProjectStore';
 import {
   factoryReset,
@@ -76,7 +77,7 @@ export function DebugModal({ onClose }: DebugModalProps) {
             className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 text-lg"
             data-testid="debug-modal-close"
           >
-            ✕
+            <X size={16} />
           </button>
         </div>
 

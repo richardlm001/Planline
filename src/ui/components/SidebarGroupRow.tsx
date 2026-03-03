@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import type { Group } from '../../domain/types';
 import { useProjectStore } from '../../store/useProjectStore';
 import { ROW_HEIGHT } from '../constants';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 
 interface SidebarGroupRowProps {
   group: Group;
@@ -75,7 +76,7 @@ export function SidebarGroupRow({ group, onDragOver, onDrop, isDragOver = false 
         className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 mr-1 flex-shrink-0"
         data-testid={`group-toggle-${group.id}`}
       >
-        {group.collapsed ? '▸' : '▾'}
+        {group.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
       </button>
       {isEditing ? (
         <input
