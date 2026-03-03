@@ -115,30 +115,70 @@ export function useKeyboardShortcuts() {
 
       if (e.key === 'Enter') {
         e.preventDefault();
-        // Insert after last selected task with midpoint sortOrder
-        const selectedIdx = selectedTaskId
-          ? sortedTasks.findIndex((t) => t.id === selectedTaskId)
-          : -1;
-        let insertSortOrder: number | undefined;
-        if (selectedIdx >= 0) {
-          const currentOrder = sortedTasks[selectedIdx].sortOrder;
-          const nextOrder = selectedIdx < sortedTasks.length - 1
-            ? sortedTasks[selectedIdx + 1].sortOrder
-            : currentOrder + 1;
-          insertSortOrder = (currentOrder + nextOrder) / 2;
-        }
 
         if (e.shiftKey) {
           // Shift+Enter creates a new group
+          const selectedIdx = selectedTaskId
+            ? sortedTasks.findIndex((t) => t.id === selectedTaskId)
+            : -1;
+          let insertSortOrder: number | undefined;
+          if (selectedIdx >= 0) {
+            const currentOrder = sortedTasks[selectedIdx].sortOrder;
+            const nextOrder = selectedIdx < sortedTasks.length - 1
+              ? sortedTasks[selectedIdx + 1].sortOrder
+              : currentOrder + 1;
+            insertSortOrder = (currentOrder + nextOrder) / 2;
+          }
           await addGroup(
             insertSortOrder !== undefined ? { sortOrder: insertSortOrder } : undefined
           );
           return;
         }
 
-        const newTask = await addTask(
-          insertSortOrder !== undefined ? { sortOrder: insertSortOrder } : undefined
-        );
+        // Determine where and how to insert the new task
+        let newGroupId: string | undefined;
+        let newSortOrder: number | undefined;
+
+        if (selectedGroupId) {
+          // A group is selected
+          const group = groups.find((g) => g.id === selectedGroupId);
+          const children = sortedTasks.filter((t) => t.groupId === selectedGroupId);
+          const maxChildOrder = children.reduce((max, t) => Math.max(max, t.sortOrder), -1);
+
+          if (group && !group.collapsed) {
+            // Expanded group → add as last child of the group
+            newGroupId = selectedGroupId;
+            newSortOrder = maxChildOrder + 1;
+          } else {
+            // Collapsed group → add as ungrouped task (sibling below)
+            const maxUngroupedOrder = sortedTasks
+              .filter((t) => !t.groupId)
+              .reduce((max, t) => Math.max(max, t.sortOrder), -1);
+            newSortOrder = maxUngroupedOrder + 1;
+          }
+        } else if (selectedTaskId) {
+          // Insert after selected task with midpoint sortOrder
+          const selectedTask = sortedTasks.find((t) => t.id === selectedTaskId);
+          if (selectedTask) {
+            // Inherit groupId from selected task (stays in same group)
+            newGroupId = selectedTask.groupId;
+
+            // Compute sortOrder among siblings (same group or ungrouped)
+            const siblings = sortedTasks.filter((t) => t.groupId === selectedTask.groupId);
+            const selectedIdx = siblings.findIndex((t) => t.id === selectedTaskId);
+            const currentOrder = selectedTask.sortOrder;
+            const nextOrder = selectedIdx < siblings.length - 1
+              ? siblings[selectedIdx + 1].sortOrder
+              : currentOrder + 1;
+            newSortOrder = (currentOrder + nextOrder) / 2;
+          }
+        }
+
+        const partial = newSortOrder !== undefined
+          ? (newGroupId ? { sortOrder: newSortOrder, groupId: newGroupId } : { sortOrder: newSortOrder })
+          : undefined;
+
+        const newTask = await addTask(partial);
         selectTask(newTask.id);
         setEditingTaskId(newTask.id);
         return;

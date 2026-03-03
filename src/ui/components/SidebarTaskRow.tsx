@@ -104,9 +104,12 @@ export function SidebarTaskRow({ task, indented = false, onDragStart, onDragOver
       {isEditing ? (
         <input
           ref={inputRef}
-          className="flex-1 bg-white border border-blue-300 rounded px-1 py-0.5 text-sm outline-none"
+          className="flex-1 bg-white border border-blue-300 rounded px-1 py-0.5 text-xs outline-none"
           value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setEditValue(v.length > 0 ? v.charAt(0).toUpperCase() + v.slice(1) : v);
+          }}
           onBlur={saveEdit}
           onKeyDown={handleKeyDown}
         />

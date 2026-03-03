@@ -53,4 +53,13 @@ describe('SidebarTaskRow', () => {
     const state = useProjectStore.getState();
     expect(state.tasks[0].name).toBe('Renamed Task');
   });
+
+  it('auto-capitalizes the first character when typing', () => {
+    render(<SidebarTaskRow task={testTask} />);
+    fireEvent.doubleClick(screen.getByTestId('task-row-test-1'));
+
+    const input = screen.getByDisplayValue('My Task') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'hello world' } });
+    expect(input.value).toBe('Hello world');
+  });
 });

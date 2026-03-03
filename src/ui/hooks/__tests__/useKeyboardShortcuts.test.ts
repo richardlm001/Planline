@@ -192,5 +192,71 @@ describe('useKeyboardShortcuts', () => {
       expect(state.selectedGroupId).toBeNull();
       expect(state.selectedTaskIds).toEqual([]);
     });
+
+    it('Enter on expanded group creates child task as last child', async () => {
+      useProjectStore.setState({ selectedTaskIds: [], selectedGroupId: 'g1' });
+      renderHook(() => useKeyboardShortcuts());
+      await act(async () => {
+        fireKey('Enter');
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      const state = useProjectStore.getState();
+      // Should have 4 tasks now
+      expect(state.tasks.length).toBe(4);
+      const newTask = state.tasks.find((t) => t.name === 'New task');
+      expect(newTask).toBeDefined();
+      // Should be a child of the group
+      expect(newTask!.groupId).toBe('g1');
+      // sortOrder should be after the last child (c has sortOrder 2)
+      expect(newTask!.sortOrder).toBe(3);
+      // Should be selected and in editing mode
+      expect(state.selectedTaskIds).toEqual([newTask!.id]);
+      expect(state.editingTaskId).toBe(newTask!.id);
+    });
+
+    it('Enter on grouped child task creates sibling in same group', async () => {
+      // Select task 'b' which is a child of group 'g1'
+      useProjectStore.setState({ selectedTaskIds: ['b'], selectionAnchorId: 'b', selectedGroupId: null });
+      renderHook(() => useKeyboardShortcuts());
+      await act(async () => {
+        fireKey('Enter');
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      const state = useProjectStore.getState();
+      expect(state.tasks.length).toBe(4);
+      const newTask = state.tasks.find((t) => t.name === 'New task');
+      expect(newTask).toBeDefined();
+      // Should be a child of the same group
+      expect(newTask!.groupId).toBe('g1');
+      // sortOrder should be between b (1) and c (2)
+      expect(newTask!.sortOrder).toBe(1.5);
+      // Should be selected and in editing mode
+      expect(state.selectedTaskIds).toEqual([newTask!.id]);
+      expect(state.editingTaskId).toBe(newTask!.id);
+    });
+
+    it('Enter on collapsed group creates ungrouped task', async () => {
+      useProjectStore.setState({
+        groups: [{ id: 'g1', name: 'Group 1', sortOrder: 0.5, collapsed: true }],
+        selectedTaskIds: [],
+        selectedGroupId: 'g1',
+      });
+      renderHook(() => useKeyboardShortcuts());
+      await act(async () => {
+        fireKey('Enter');
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      const state = useProjectStore.getState();
+      expect(state.tasks.length).toBe(4);
+      const newTask = state.tasks.find((t) => t.name === 'New task');
+      expect(newTask).toBeDefined();
+      // Should NOT be a child of the group (ungrouped sibling)
+      expect(newTask!.groupId).toBeUndefined();
+      // sortOrder should be after the last ungrouped task (a has sortOrder 0)
+      expect(newTask!.sortOrder).toBe(1);
+      // Should be selected and in editing mode
+      expect(state.selectedTaskIds).toEqual([newTask!.id]);
+      expect(state.editingTaskId).toBe(newTask!.id);
+    });
   });
 });
