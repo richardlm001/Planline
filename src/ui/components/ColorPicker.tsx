@@ -34,7 +34,7 @@ export function ColorPicker({ taskId, currentColor }: ColorPickerProps) {
   return (
     <div className="relative flex items-center" ref={popoverRef}>
       <button
-        className="w-2.5 h-2.5 rounded-full border flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-white/50"
+        className="w-2 h-2 rounded-full border flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-white/50"
         style={{ backgroundColor: currentColor, borderColor: darkenHex(currentColor, 0.25) }}
         onClick={(e) => {
           e.stopPropagation();
