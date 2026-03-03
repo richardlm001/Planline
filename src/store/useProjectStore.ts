@@ -31,6 +31,9 @@ interface ProjectState {
   hydrationError: string | null;
   persistError: string | null;
 
+  // Drag/resize live overrides (not persisted)
+  dragOverrides: Map<string, { start: number; durationDays: number }>;
+
   // Actions
   hydrate: () => Promise<void>;
   addTask: (task?: Partial<Task>) => Promise<Task>;
@@ -49,6 +52,8 @@ interface ProjectState {
   setEditingTaskId: (id: string | null) => void;
   setLinkingFromTaskId: (id: string | null) => void;
   setZoomLevel: (level: ZoomLevel) => void;
+  setDragOverride: (taskId: string, start: number, durationDays: number) => void;
+  clearDragOverride: (taskId: string) => void;
   dismissError: () => void;
 }
 
@@ -91,6 +96,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   isLoaded: false,
   hydrationError: null,
   persistError: null,
+  dragOverrides: new Map(),
 
   hydrate: async () => {
     try {
@@ -446,6 +452,18 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
   setZoomLevel: (level: ZoomLevel) => {
     set({ zoomLevel: level });
+  },
+
+  setDragOverride: (taskId: string, start: number, durationDays: number) => {
+    const next = new Map(get().dragOverrides);
+    next.set(taskId, { start, durationDays });
+    set({ dragOverrides: next });
+  },
+
+  clearDragOverride: (taskId: string) => {
+    const next = new Map(get().dragOverrides);
+    next.delete(taskId);
+    set({ dragOverrides: next });
   },
 
   dismissError: () => {

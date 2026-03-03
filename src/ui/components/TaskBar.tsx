@@ -42,6 +42,8 @@ export const TaskBar = memo(function TaskBar({
   const linkingFromTaskId = useProjectStore((s) => s.linkingFromTaskId);
   const setLinkingFromTaskId = useProjectStore((s) => s.setLinkingFromTaskId);
   const addDependency = useProjectStore((s) => s.addDependency);
+  const setDragOverride = useProjectStore((s) => s.setDragOverride);
+  const clearDragOverride = useProjectStore((s) => s.clearDragOverride);
 
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -119,8 +121,10 @@ export const TaskBar = memo(function TaskBar({
       setVerticalDragRow(targetRow);
     } else {
       setDragOffset(dx);
+      const newStart = computedStart + snapToHalfDay(dx / pixelsPerDay);
+      setDragOverride(task.id, newStart, task.durationDays);
     }
-  }, [isDragging, isVerticalDrag, rowIndex, totalRows]);
+  }, [isDragging, isVerticalDrag, rowIndex, totalRows, computedStart, pixelsPerDay, task.id, task.durationDays, setDragOverride]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (isDragging) {
@@ -141,8 +145,9 @@ export const TaskBar = memo(function TaskBar({
       setDragOffset(0);
       setVerticalDragRow(null);
       dragDirectionDecided.current = false;
+      clearDragOverride(task.id);
     }
-  }, [isDragging, isVerticalDrag, verticalDragRow, rowIndex, pixelsPerDay, task.id, computedStart, updateTask, onVerticalDrop]);
+  }, [isDragging, isVerticalDrag, verticalDragRow, rowIndex, pixelsPerDay, task.id, computedStart, updateTask, onVerticalDrop, clearDragOverride]);
 
   // --- Resize handlers ---
   const handleResizePointerDown = useCallback((e: React.PointerEvent, edge: 'left' | 'right') => {
@@ -157,9 +162,19 @@ export const TaskBar = memo(function TaskBar({
 
   const handleResizePointerMove = useCallback((e: React.PointerEvent) => {
     if (resizeEdge) {
-      setResizeDelta(e.clientX - dragStartX.current);
+      const delta = e.clientX - dragStartX.current;
+      setResizeDelta(delta);
+      const daysDelta = snapToHalfDay(delta / pixelsPerDay);
+      if (resizeEdge === 'right') {
+        const newDuration = Math.max(MIN_DURATION, task.durationDays + daysDelta);
+        setDragOverride(task.id, computedStart, newDuration);
+      } else {
+        const newDuration = Math.max(MIN_DURATION, task.durationDays - daysDelta);
+        const actualDelta = task.durationDays - newDuration;
+        setDragOverride(task.id, computedStart + actualDelta, newDuration);
+      }
     }
-  }, [resizeEdge]);
+  }, [resizeEdge, pixelsPerDay, task.id, task.durationDays, computedStart, setDragOverride]);
 
   const handleResizePointerUp = useCallback((e: React.PointerEvent) => {
     if (resizeEdge) {
@@ -182,8 +197,9 @@ export const TaskBar = memo(function TaskBar({
 
       setResizeEdge(null);
       setResizeDelta(0);
+      clearDragOverride(task.id);
     }
-  }, [resizeEdge, pixelsPerDay, task.id, task.durationDays, task.startDayIndex, updateTask]);
+  }, [resizeEdge, pixelsPerDay, task.id, task.durationDays, task.startDayIndex, updateTask, clearDragOverride]);
 
   // --- Dependency linking handlers ---
   const handleOutputConnectorDown = useCallback((e: React.PointerEvent) => {

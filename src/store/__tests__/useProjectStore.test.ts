@@ -242,4 +242,28 @@ describe('useProjectStore', () => {
     useProjectStore.getState().setZoomLevel('day');
     expect(useProjectStore.getState().zoomLevel).toBe('day');
   });
+
+  it('setDragOverride publishes live start/duration and clearDragOverride removes it', () => {
+    const { setDragOverride, clearDragOverride } = useProjectStore.getState();
+
+    setDragOverride('task-1', 10, 5);
+    expect(useProjectStore.getState().dragOverrides.get('task-1')).toEqual({ start: 10, durationDays: 5 });
+
+    // Update overrides for same task
+    setDragOverride('task-1', 12, 3);
+    expect(useProjectStore.getState().dragOverrides.get('task-1')).toEqual({ start: 12, durationDays: 3 });
+
+    // Add a second override
+    setDragOverride('task-2', 0, 7);
+    expect(useProjectStore.getState().dragOverrides.size).toBe(2);
+
+    // Clear one
+    clearDragOverride('task-1');
+    expect(useProjectStore.getState().dragOverrides.has('task-1')).toBe(false);
+    expect(useProjectStore.getState().dragOverrides.has('task-2')).toBe(true);
+
+    // Clear the other
+    clearDragOverride('task-2');
+    expect(useProjectStore.getState().dragOverrides.size).toBe(0);
+  });
 });

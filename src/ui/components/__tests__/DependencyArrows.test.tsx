@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import 'fake-indexeddb/auto';
 import { DependencyArrows } from '../DependencyArrows';
 import { useProjectStore } from '../../../store/useProjectStore';
@@ -152,5 +152,38 @@ describe('DependencyArrows', () => {
     // Row 2 center Y = 2 * 40 + 6 + 14 = 100
     expect(d).toContain('20');
     expect(d).toContain('100');
+  });
+
+  it('uses dragOverrides for arrow endpoints when present', () => {
+    useProjectStore.setState({
+      tasks: [
+        { id: 't1', name: 'A', startDayIndex: 0, durationDays: 3, color: '#3B82F6', sortOrder: 0 },
+        { id: 't2', name: 'B', startDayIndex: 5, durationDays: 2, color: '#10B981', sortOrder: 1 },
+      ],
+      dependencies: [{ id: 'd1', fromTaskId: 't1', toTaskId: 't2' }],
+      computedStarts: new Map([['t1', 0], ['t2', 5]]),
+    });
+
+    // Without overrides: arrow starts at dayToPixel(0 + 3) = 120
+    const { container, rerender } = render(<DependencyArrows {...defaultProps} />);
+    const pathBefore = container.querySelector('path')!;
+    const dBefore = pathBefore.getAttribute('d')!;
+    // sx = dayToPixel(0 + 3) = 120
+    expect(dBefore).toContain('120');
+
+    // Apply dragOverride: extend duration to 6
+    act(() => {
+      useProjectStore.setState({
+        dragOverrides: new Map([['t1', { start: 0, durationDays: 6 }]]),
+      });
+    });
+
+    rerender(<DependencyArrows {...defaultProps} />);
+    const pathAfter = container.querySelector('path')!;
+    const dAfter = pathAfter.getAttribute('d')!;
+    // sx = dayToPixel(0 + 6) = 240
+    expect(dAfter).toContain('240');
+    // The old value should no longer appear as start x
+    expect(dAfter).not.toMatch(/^M 120 /);
   });
 });

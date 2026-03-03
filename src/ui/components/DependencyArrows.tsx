@@ -16,6 +16,7 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
   const groups = useProjectStore((s) => s.groups);
   const dependencies = useProjectStore((s) => s.dependencies);
   const computedStarts = useProjectStore((s) => s.computedStarts);
+  const dragOverrides = useProjectStore((s) => s.dragOverrides);
   const markerId = useId();
   const dashedMarkerId = `${markerId}-dashed`;
 
@@ -75,10 +76,13 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
 
     // Both tasks visible — normal arrow
     if (fromRow !== undefined && toRow !== undefined) {
-      const fromStart = computedStarts.get(dep.fromTaskId) ?? fromTask.startDayIndex;
-      const toStart = computedStarts.get(dep.toTaskId) ?? toTask.startDayIndex;
+      const fromOverride = dragOverrides.get(dep.fromTaskId);
+      const toOverride = dragOverrides.get(dep.toTaskId);
+      const fromStart = fromOverride?.start ?? computedStarts.get(dep.fromTaskId) ?? fromTask.startDayIndex;
+      const toStart = toOverride?.start ?? computedStarts.get(dep.toTaskId) ?? toTask.startDayIndex;
+      const fromDuration = fromOverride?.durationDays ?? fromTask.durationDays;
 
-      const sx = dayToPixel(fromStart + fromTask.durationDays);
+      const sx = dayToPixel(fromStart + fromDuration);
       const sy = barCenterY(fromRow);
       const tx = dayToPixel(toStart);
       const ty = barCenterY(toRow);
@@ -112,10 +116,13 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
     const effectiveToRow = resolveRow(dep.toTaskId, toTask);
     if (effectiveFromRow === undefined || effectiveToRow === undefined) return null;
 
-    const fromStart = computedStarts.get(dep.fromTaskId) ?? fromTask.startDayIndex;
-    const toStart = computedStarts.get(dep.toTaskId) ?? toTask.startDayIndex;
+    const fromOverride = dragOverrides.get(dep.fromTaskId);
+    const toOverride = dragOverrides.get(dep.toTaskId);
+    const fromStart = fromOverride?.start ?? computedStarts.get(dep.fromTaskId) ?? fromTask.startDayIndex;
+    const toStart = toOverride?.start ?? computedStarts.get(dep.toTaskId) ?? toTask.startDayIndex;
+    const fromDuration = fromOverride?.durationDays ?? fromTask.durationDays;
 
-    const sx = dayToPixel(fromStart + fromTask.durationDays);
+    const sx = dayToPixel(fromStart + fromDuration);
     const sy = barCenterY(effectiveFromRow);
     const tx = dayToPixel(toStart);
     const ty = barCenterY(effectiveToRow);
