@@ -212,6 +212,7 @@ export const TaskBar = memo(function TaskBar({
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onClick={(e) => e.stopPropagation()}
       data-testid={`task-bar-${task.id}`}
     >
       {/* Left connector (input) */}

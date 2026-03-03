@@ -107,4 +107,17 @@ describe('TaskBar', () => {
     const bar = container.firstElementChild as HTMLElement;
     expect(bar.style.left).toBe('400px'); // 10 * 40
   });
+
+  it('stops click event propagation so canvas deselect does not fire', () => {
+    useProjectStore.setState({ tasks: [defaultTask], selectedTaskIds: ['t1'], selectionAnchorId: 't1' });
+    const parentClickSpy = { called: false };
+    const { getByTestId } = render(
+      <div onClick={() => { parentClickSpy.called = true; }}>
+        <TaskBar {...defaultProps} />
+      </div>
+    );
+    const bar = getByTestId('task-bar-t1');
+    fireEvent.click(bar);
+    expect(parentClickSpy.called).toBe(false);
+  });
 });

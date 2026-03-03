@@ -44,6 +44,7 @@ export interface TimelineColumn {
 export function Timeline() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const zoomLevel = useProjectStore((s) => s.zoomLevel);
+  const clearSelection = useProjectStore((s) => s.clearSelection);
   const zoomConfig = ZOOM_CONFIGS[zoomLevel];
   const columnWidth = zoomConfig.columnWidth;
 
@@ -171,6 +172,10 @@ export function Timeline() {
     return px;
   }, [zoomLevel, rangeStartDayIndex, pixelsPerDay, columns, columnWidth]);
 
+  const handleCanvasClick = useCallback(() => {
+    clearSelection();
+  }, [clearSelection]);
+
   const prevZoomRef = useRef(zoomLevel);
 
   // Scroll so today appears at ~20% from the left edge on mount and when zoom changes
@@ -192,7 +197,7 @@ export function Timeline() {
       <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto">
         <div style={{ width: totalWidth, minHeight: '100%' }} className="relative">
           <TimelineHeader columns={columns} columnWidth={columnWidth} />
-          <div className="relative" style={{ marginTop: 0 }}>
+          <div className="relative" style={{ marginTop: 0 }} onClick={handleCanvasClick}>
             {/* Grid lines */}
             {columns.map((col, i) => (
               <div
