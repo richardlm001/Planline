@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { buildExportData, validateImportData, importProject } from '../../db/export';
 import { format } from 'date-fns';
@@ -10,6 +10,26 @@ export function ExportImportButtons() {
   const groups = useProjectStore((s) => s.groups);
   const hydrate = useProjectStore((s) => s.hydrate);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
 
   const handleExport = useCallback(() => {
     const data = buildExportData(project, tasks, dependencies, groups);
@@ -26,6 +46,7 @@ export function ExportImportButtons() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    setIsOpen(false);
   }, [project, tasks, dependencies, groups]);
 
   const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,26 +73,46 @@ export function ExportImportButtons() {
 
     // Reset file input so the same file can be imported again
     if (fileInputRef.current) fileInputRef.current.value = '';
+    setIsOpen(false);
   }, [hydrate]);
 
   return (
-    <div className="flex gap-1 flex-shrink-0">
+    <div className="relative flex-shrink-0">
       <button
-        onClick={handleExport}
-        className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
-        data-testid="export-btn"
-        title="Export JSON"
+        ref={buttonRef}
+        onClick={() => setIsOpen((v) => !v)}
+        className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+        data-testid="project-menu-btn"
+        title="Project menu"
       >
-        Export
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="8" cy="3" r="1.5" />
+          <circle cx="8" cy="8" r="1.5" />
+          <circle cx="8" cy="13" r="1.5" />
+        </svg>
       </button>
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
-        data-testid="import-btn"
-        title="Import JSON"
-      >
-        Import
-      </button>
+      {isOpen && (
+        <div
+          ref={menuRef}
+          className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 z-50 min-w-[120px]"
+          data-testid="project-menu"
+        >
+          <button
+            onClick={handleExport}
+            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            data-testid="export-btn"
+          >
+            Export
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            data-testid="import-btn"
+          >
+            Import
+          </button>
+        </div>
+      )}
       <input
         ref={fileInputRef}
         type="file"
