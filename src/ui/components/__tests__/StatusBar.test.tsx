@@ -58,4 +58,14 @@ describe('StatusBar', () => {
     expect(screen.getByText('Add dependent')).toBeTruthy();
     expect(screen.getByText('Delete')).toBeTruthy();
   });
+
+  it('shows Delete shortcut when a group is selected', () => {
+    useProjectStore.setState({
+      selectedTaskIds: [],
+      selectedGroupId: 'group-1',
+      groups: [{ id: 'group-1', name: 'G', collapsed: false, sortOrder: 0 }],
+    });
+    render(<StatusBar />);
+    expect(screen.getByText('Delete')).toBeTruthy();
+  });
 });

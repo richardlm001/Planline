@@ -22,8 +22,9 @@ function Kbd({ children }: { children: React.ReactNode }) {
 export function StatusBar() {
   const lastSavedAt = useProjectStore((s) => s.lastSavedAt);
   const selectedTaskIds = useProjectStore((s) => s.selectedTaskIds);
+  const selectedGroupId = useProjectStore((s) => s.selectedGroupId);
 
-  const hasSelection = selectedTaskIds.length > 0;
+  const hasSelection = selectedTaskIds.length > 0 || selectedGroupId !== null;
 
   const statusLabel = lastSavedAt ? 'Saved on device' : 'Not yet saved';
 

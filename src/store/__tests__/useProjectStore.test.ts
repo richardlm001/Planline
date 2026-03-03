@@ -216,6 +216,43 @@ describe('useProjectStore', () => {
     expect(state.tasks[0].groupId).toBeUndefined();
   });
 
+  it('removeGroupWithChildren deletes group and all child tasks and their dependencies', async () => {
+    const group = await useProjectStore.getState().addGroup({ name: 'Sprint 1' });
+    const taskA = await useProjectStore.getState().addTask({ name: 'Design', groupId: group.id });
+    const taskB = await useProjectStore.getState().addTask({ name: 'Build', groupId: group.id });
+    const outsideTask = await useProjectStore.getState().addTask({ name: 'Unrelated' });
+
+    // Create dependency between child tasks, and one crossing the group boundary
+    await useProjectStore.getState().addDependency(taskA.id, taskB.id);
+    await useProjectStore.getState().addDependency(taskB.id, outsideTask.id);
+
+    // Select one of the child tasks and the group
+    useProjectStore.setState({ selectedTaskIds: [taskA.id], selectedGroupId: group.id });
+
+    await useProjectStore.getState().removeGroupWithChildren(group.id);
+
+    const state = useProjectStore.getState();
+    expect(state.groups).toHaveLength(0);
+    expect(state.tasks).toHaveLength(1);
+    expect(state.tasks[0].id).toBe(outsideTask.id);
+    expect(state.dependencies).toHaveLength(0);
+    // Selection should be cleared for deleted items
+    expect(state.selectedTaskIds).toHaveLength(0);
+    expect(state.selectedGroupId).toBeNull();
+    // Scheduler should have re-run (no error, outsideTask still has a computed start)
+    expect(state.computedStarts.has(outsideTask.id)).toBe(true);
+  });
+
+  it('removeGroupWithChildren on empty group just removes the group', async () => {
+    const group = await useProjectStore.getState().addGroup({ name: 'Empty group' });
+
+    await useProjectStore.getState().removeGroupWithChildren(group.id);
+
+    const state = useProjectStore.getState();
+    expect(state.groups).toHaveLength(0);
+    expect(state.tasks).toHaveLength(0);
+  });
+
   it('setEditingTaskId sets editing task', () => {
     useProjectStore.getState().setEditingTaskId('t1');
     expect(useProjectStore.getState().editingTaskId).toBe('t1');

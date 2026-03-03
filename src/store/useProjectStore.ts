@@ -46,6 +46,7 @@ interface ProjectState {
   addGroup: (group?: Partial<Group>) => Promise<Group>;
   updateGroup: (id: string, partial: Partial<Group>) => Promise<void>;
   removeGroup: (id: string) => Promise<void>;
+  removeGroupWithChildren: (id: string) => Promise<void>;
   selectTask: (id: string | null, opts?: { shift?: boolean; meta?: boolean }) => void;
   selectGroup: (id: string | null) => void;
   clearSelection: () => void;
@@ -347,6 +348,37 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       }
     } catch (err) {
       set({ persistError: err instanceof Error ? err.message : 'Failed to remove group' });
+    }
+  },
+
+  removeGroupWithChildren: async (id: string) => {
+    const state = get();
+    const childTaskIds = new Set(state.tasks.filter((t) => t.groupId === id).map((t) => t.id));
+    const newTasks = state.tasks.filter((t) => t.groupId !== id);
+    const newDeps = state.dependencies.filter(
+      (d) => !childTaskIds.has(d.fromTaskId) && !childTaskIds.has(d.toTaskId)
+    );
+    const newGroups = state.groups.filter((g) => g.id !== id);
+    const schedule = runScheduler(newTasks, newDeps);
+
+    set({
+      tasks: newTasks,
+      dependencies: newDeps,
+      groups: newGroups,
+      ...schedule,
+      selectedTaskIds: state.selectedTaskIds.filter((sid) => !childTaskIds.has(sid)),
+      selectedGroupId: state.selectedGroupId === id ? null : state.selectedGroupId,
+      lastSavedAt: new Date(),
+    });
+
+    try {
+      for (const taskId of childTaskIds) {
+        await repo.deleteTask(taskId);
+        await repo.deleteDependenciesForTask(taskId);
+      }
+      await repo.deleteGroup(id);
+    } catch (err) {
+      set({ persistError: err instanceof Error ? err.message : 'Failed to remove group with children' });
     }
   },
 

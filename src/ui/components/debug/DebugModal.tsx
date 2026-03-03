@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useProjectStore } from '../../../store/useProjectStore';
+import { confirmDialog } from '../ConfirmDialog';
 import {
   factoryReset,
   prefillData,
@@ -39,14 +40,14 @@ export function DebugModal({ onClose }: DebugModalProps) {
   );
 
   const handleReset = useCallback(async () => {
-    if (!window.confirm('This will permanently delete all tasks, groups, and dependencies. Continue?')) return;
+    if (!await confirmDialog('This will permanently delete all tasks, groups, and dependencies. Continue?')) return;
     await factoryReset();
     onClose();
   }, [onClose]);
 
   const handlePrefill = useCallback(
     async (preset: 'small' | 'medium' | 'large') => {
-      if (!window.confirm(`This will replace all data with the ${preset} sample project. Continue?`)) return;
+      if (!await confirmDialog(`This will replace all data with the ${preset} sample project. Continue?`)) return;
       await prefillData(preset);
       onClose();
     },
@@ -54,7 +55,7 @@ export function DebugModal({ onClose }: DebugModalProps) {
   );
 
   const handleClearDeps = useCallback(async () => {
-    if (!window.confirm('Remove all dependencies? Tasks and groups will be kept.')) return;
+    if (!await confirmDialog('Remove all dependencies? Tasks and groups will be kept.')) return;
     await clearAllDependencies();
   }, []);
 

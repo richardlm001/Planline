@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useMemo } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { buildVisualRowMap } from '../components/layoutUtils';
+import { confirmDialog } from '../components/ConfirmDialog';
 
 export function useKeyboardShortcuts() {
   const tasks = useProjectStore((s) => s.tasks);
@@ -14,6 +15,7 @@ export function useKeyboardShortcuts() {
   const addTask = useProjectStore((s) => s.addTask);
   const addGroup = useProjectStore((s) => s.addGroup);
   const removeTask = useProjectStore((s) => s.removeTask);
+  const removeGroupWithChildren = useProjectStore((s) => s.removeGroupWithChildren);
   const addDependency = useProjectStore((s) => s.addDependency);
   const setEditingTaskId = useProjectStore((s) => s.setEditingTaskId);
   const setEditingGroupId = useProjectStore((s) => s.setEditingGroupId);
@@ -109,6 +111,16 @@ export function useKeyboardShortcuts() {
           // Delete all selected tasks
           for (const id of [...selectedTaskIds]) {
             await removeTask(id);
+          }
+        } else if (selectedGroupId) {
+          e.preventDefault();
+          const childCount = tasks.filter((t) => t.groupId === selectedGroupId).length;
+          const groupName = groups.find((g) => g.id === selectedGroupId)?.name ?? 'this group';
+          const message = childCount > 0
+            ? `"${groupName}" has ${childCount} task${childCount === 1 ? '' : 's'}. Deleting this group will also delete all its tasks and their dependencies. Continue?`
+            : `Delete group "${groupName}"?`;
+          if (await confirmDialog(message)) {
+            await removeGroupWithChildren(selectedGroupId);
           }
         }
         return;
@@ -245,6 +257,7 @@ export function useKeyboardShortcuts() {
       addTask,
       addGroup,
       removeTask,
+      removeGroupWithChildren,
       addDependency,
       setEditingTaskId,
       setEditingGroupId,

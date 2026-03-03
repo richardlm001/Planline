@@ -4,6 +4,7 @@ import { buildExportData, validateImportData, importProject } from '../../db/exp
 import { DebugModal } from './debug/DebugModal';
 import { format } from 'date-fns';
 import { EllipsisVertical } from 'lucide-react';
+import { confirmDialog, alertDialog } from './ConfirmDialog';
 
 export function ExportImportButtons() {
   const project = useProjectStore((s) => s.project);
@@ -62,16 +63,16 @@ export function ExportImportButtons() {
 
       const result = validateImportData(data);
       if (!result.valid) {
-        alert(`Invalid Planline JSON file: ${result.error}`);
+        await alertDialog(`Invalid Planline JSON file: ${result.error}`);
         return;
       }
 
-      if (!confirm('This will replace all current data. Continue?')) return;
+      if (!await confirmDialog('This will replace all current data. Continue?')) return;
 
       await importProject(result.data);
       await hydrate();
     } catch {
-      alert('Failed to parse JSON file.');
+      await alertDialog('Failed to parse JSON file.');
     }
 
     // Reset file input so the same file can be imported again
