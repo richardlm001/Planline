@@ -24,6 +24,7 @@ interface ProjectState {
   selectionAnchorId: string | null;
   selectedGroupId: string | null;
   editingTaskId: string | null;
+  editingGroupId: string | null;
   linkingFromTaskId: string | null;
   zoomLevel: ZoomLevel;
   lastSavedAt: Date | null;
@@ -50,6 +51,7 @@ interface ProjectState {
   clearSelection: () => void;
   moveTasksToPosition: (taskIds: string[], targetIndex: number, targetGroupId?: string) => Promise<void>;
   setEditingTaskId: (id: string | null) => void;
+  setEditingGroupId: (id: string | null) => void;
   setLinkingFromTaskId: (id: string | null) => void;
   setZoomLevel: (level: ZoomLevel) => void;
   setDragOverride: (taskId: string, start: number, durationDays: number) => void;
@@ -90,6 +92,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   selectionAnchorId: null,
   selectedGroupId: null,
   editingTaskId: null,
+  editingGroupId: null,
   linkingFromTaskId: null,
   zoomLevel: 'day' as ZoomLevel,
   lastSavedAt: null,
@@ -444,6 +447,10 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
   setEditingTaskId: (id: string | null) => {
     set({ editingTaskId: id });
+  },
+
+  setEditingGroupId: (id: string | null) => {
+    set({ editingGroupId: id });
   },
 
   setLinkingFromTaskId: (id: string | null) => {

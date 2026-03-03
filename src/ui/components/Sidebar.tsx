@@ -17,7 +17,9 @@ export function Sidebar({ width }: SidebarProps) {
   const addTask = useProjectStore((s) => s.addTask);
   const addGroup = useProjectStore((s) => s.addGroup);
   const selectTask = useProjectStore((s) => s.selectTask);
+  const selectGroup = useProjectStore((s) => s.selectGroup);
   const setEditingTaskId = useProjectStore((s) => s.setEditingTaskId);
+  const setEditingGroupId = useProjectStore((s) => s.setEditingGroupId);
   const moveTasksToPosition = useProjectStore((s) => s.moveTasksToPosition);
 
   const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
@@ -71,8 +73,10 @@ export function Sidebar({ width }: SidebarProps) {
   }, [addTask, selectTask, setEditingTaskId]);
 
   const handleAddGroup = useCallback(async () => {
-    await addGroup();
-  }, [addGroup]);
+    const newGroup = await addGroup();
+    selectGroup(newGroup.id);
+    setEditingGroupId(newGroup.id);
+  }, [addGroup, selectGroup, setEditingGroupId]);
 
   // --- Drag and drop handlers ---
   const handleTaskDragStart = useCallback((e: React.DragEvent, taskId: string) => {

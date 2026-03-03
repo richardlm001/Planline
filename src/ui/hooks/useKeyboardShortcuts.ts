@@ -16,6 +16,7 @@ export function useKeyboardShortcuts() {
   const removeTask = useProjectStore((s) => s.removeTask);
   const addDependency = useProjectStore((s) => s.addDependency);
   const setEditingTaskId = useProjectStore((s) => s.setEditingTaskId);
+  const setEditingGroupId = useProjectStore((s) => s.setEditingGroupId);
 
   const collapsedGroupIds = useMemo(
     () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
@@ -129,9 +130,11 @@ export function useKeyboardShortcuts() {
               : currentOrder + 1;
             insertSortOrder = (currentOrder + nextOrder) / 2;
           }
-          await addGroup(
+          const newGroup = await addGroup(
             insertSortOrder !== undefined ? { sortOrder: insertSortOrder } : undefined
           );
+          selectGroup(newGroup.id);
+          setEditingGroupId(newGroup.id);
           return;
         }
 
@@ -244,6 +247,7 @@ export function useKeyboardShortcuts() {
       removeTask,
       addDependency,
       setEditingTaskId,
+      setEditingGroupId,
     ]
   );
 

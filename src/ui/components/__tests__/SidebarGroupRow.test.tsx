@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import 'fake-indexeddb/auto';
 import { useProjectStore } from '../../../store/useProjectStore';
 import { SidebarGroupRow } from '../SidebarGroupRow';
@@ -86,5 +86,16 @@ describe('SidebarGroupRow', () => {
     fireEvent.keyDown(input, { key: 'Escape' });
     // Name should not have changed
     expect(useProjectStore.getState().groups[0].name).toBe('Sprint 1');
+  });
+
+  it('auto-enters edit mode when editingGroupId matches', async () => {
+    useProjectStore.setState({ editingGroupId: 'g1' });
+    render(<SidebarGroupRow group={testGroup} />);
+    // Wait for the queueMicrotask to fire
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+    const input = screen.getByDisplayValue('Sprint 1') as HTMLInputElement;
+    expect(input).toBeTruthy();
   });
 });

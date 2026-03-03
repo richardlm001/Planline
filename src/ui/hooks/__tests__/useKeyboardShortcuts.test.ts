@@ -76,6 +76,9 @@ describe('useKeyboardShortcuts', () => {
     expect(state.tasks.length).toBe(3);
     // sortOrder should be between task A (0) and task B (1)
     expect(state.groups[0].sortOrder).toBe(0.5);
+    // Group should be selected and in editing mode
+    expect(state.selectedGroupId).toBe(state.groups[0].id);
+    expect(state.editingGroupId).toBe(state.groups[0].id);
   });
 
   it('Shift+Enter without selection appends group at end', async () => {

@@ -15,6 +15,8 @@ export function SidebarGroupRow({ group, onDragOver, onDrop, isDragOver = false 
   const updateGroup = useProjectStore((s) => s.updateGroup);
   const selectedGroupId = useProjectStore((s) => s.selectedGroupId);
   const selectGroup = useProjectStore((s) => s.selectGroup);
+  const editingGroupId = useProjectStore((s) => s.editingGroupId);
+  const setEditingGroupId = useProjectStore((s) => s.setEditingGroupId);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(group.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,12 +42,21 @@ export function SidebarGroupRow({ group, onDragOver, onDrop, isDragOver = false 
       updateGroup(group.id, { name: trimmed });
     }
     setIsEditing(false);
-  }, [editValue, group.id, group.name, updateGroup]);
+    setEditingGroupId(null);
+  }, [editValue, group.id, group.name, updateGroup, setEditingGroupId]);
 
   const cancelEdit = useCallback(() => {
     setEditValue(group.name);
     setIsEditing(false);
-  }, [group.name]);
+    setEditingGroupId(null);
+  }, [group.name, setEditingGroupId]);
+
+  // Auto-enter edit mode when store signals this group should be edited
+  useEffect(() => {
+    if (editingGroupId === group.id && !isEditing) {
+      queueMicrotask(() => startEditing());
+    }
+  }, [editingGroupId, group.id, isEditing, startEditing]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
