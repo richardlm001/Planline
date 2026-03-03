@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import 'fake-indexeddb/auto';
 import { useProjectStore } from '../../../store/useProjectStore';
 import { ProjectHeader } from '../ProjectHeader';
+import App from '../../App';
 
 beforeEach(() => {
   useProjectStore.setState({
@@ -37,5 +38,22 @@ describe('ProjectHeader', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
 
     expect(useProjectStore.getState().project.name).toBe('My Project');
+  });
+});
+
+describe('Document title', () => {
+  it('sets document.title to "Planline | <project name>"', () => {
+    render(<App />);
+    expect(document.title).toBe('Planline | Project 01');
+  });
+
+  it('updates document.title when the project name changes', () => {
+    render(<App />);
+    act(() => {
+      useProjectStore.setState({
+        project: { id: 'default', name: 'Sprint Plan', epoch: '2024-01-01' },
+      });
+    });
+    expect(document.title).toBe('Planline | Sprint Plan');
   });
 });

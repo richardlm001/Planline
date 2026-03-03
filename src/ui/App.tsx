@@ -16,6 +16,7 @@ function App() {
   const persistError = useProjectStore((s) => s.persistError);
   const dismissError = useProjectStore((s) => s.dismissError);
   const setLinkingFromTaskId = useProjectStore((s) => s.setLinkingFromTaskId);
+  const projectName = useProjectStore((s) => s.project.name);
   const hasHydrated = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_WIDTH);
@@ -29,6 +30,11 @@ function App() {
       hydrate();
     }
   }, [hydrate]);
+
+  // Keep browser tab title in sync with project name
+  useEffect(() => {
+    document.title = `Planline | ${projectName}`;
+  }, [projectName]);
 
   // Cancel linking on pointer up anywhere
   const handleGlobalPointerUp = useCallback(() => {
