@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { render, act, fireEvent } from '@testing-library/react';
 import 'fake-indexeddb/auto';
 import { DependencyArrows } from '../DependencyArrows';
 import { useProjectStore } from '../../../store/useProjectStore';
+
+/** Return only visible arrow paths (not the transparent hit-area paths). */
+const getVisiblePaths = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('path')).filter(
+    (p) => p.getAttribute('stroke') !== 'transparent'
+  );
 
 beforeEach(() => {
   useProjectStore.setState({
@@ -14,6 +20,7 @@ beforeEach(() => {
     cycleTaskIds: [],
     selectedTaskIds: [],
     selectionAnchorId: null,
+    selectedDependencyId: null,
     editingTaskId: null,
     linkingFromTaskId: null,
     lastSavedAt: null,
@@ -43,7 +50,7 @@ describe('DependencyArrows', () => {
     });
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
-    const paths = container.querySelectorAll('path');
+    const paths = getVisiblePaths(container);
     expect(paths.length).toBe(1);
     // Solid arrow should not have strokeDasharray
     expect(paths[0].getAttribute('stroke-dasharray')).toBeNull();
@@ -61,7 +68,7 @@ describe('DependencyArrows', () => {
     });
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
-    const paths = container.querySelectorAll('path');
+    const paths = getVisiblePaths(container);
     expect(paths.length).toBe(1);
     // Collapsed arrow should have dashed style
     expect(paths[0].getAttribute('stroke-dasharray')).toBe('4 3');
@@ -79,7 +86,7 @@ describe('DependencyArrows', () => {
     });
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
-    const paths = container.querySelectorAll('path');
+    const paths = getVisiblePaths(container);
     expect(paths.length).toBe(1);
     expect(paths[0].getAttribute('stroke-dasharray')).toBe('4 3');
   });
@@ -96,7 +103,7 @@ describe('DependencyArrows', () => {
     });
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
-    const paths = container.querySelectorAll('path');
+    const paths = getVisiblePaths(container);
     expect(paths.length).toBe(1);
     expect(paths[0].getAttribute('stroke-dasharray')).toBeNull();
   });
@@ -113,7 +120,7 @@ describe('DependencyArrows', () => {
     });
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
-    const paths = container.querySelectorAll('path');
+    const paths = getVisiblePaths(container);
     // Both tasks collapsed to same group position — arrow still renders (dashed)
     expect(paths.length).toBe(1);
     expect(paths[0].getAttribute('stroke-dasharray')).toBe('4 3');
@@ -129,7 +136,7 @@ describe('DependencyArrows', () => {
     });
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
-    const paths = container.querySelectorAll('path');
+    const paths = getVisiblePaths(container);
     expect(paths.length).toBe(0);
   });
 
@@ -145,9 +152,9 @@ describe('DependencyArrows', () => {
     });
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
-    const path = container.querySelector('path');
-    expect(path).toBeTruthy();
-    const d = path!.getAttribute('d')!;
+    const paths = getVisiblePaths(container);
+    expect(paths.length).toBe(1);
+    const d = paths[0].getAttribute('d')!;
     // Row 0 center Y = 0 * 40 + 6 + 14 = 20
     // Row 2 center Y = 2 * 40 + 6 + 14 = 100
     expect(d).toContain('20');
@@ -166,8 +173,8 @@ describe('DependencyArrows', () => {
 
     // Without overrides: arrow starts at dayToPixel(0 + 3) = 120
     const { container, rerender } = render(<DependencyArrows {...defaultProps} />);
-    const pathBefore = container.querySelector('path')!;
-    const dBefore = pathBefore.getAttribute('d')!;
+    const pathsBefore = getVisiblePaths(container);
+    const dBefore = pathsBefore[0].getAttribute('d')!;
     // sx = dayToPixel(0 + 3) = 120
     expect(dBefore).toContain('120');
 
@@ -179,11 +186,61 @@ describe('DependencyArrows', () => {
     });
 
     rerender(<DependencyArrows {...defaultProps} />);
-    const pathAfter = container.querySelector('path')!;
-    const dAfter = pathAfter.getAttribute('d')!;
+    const pathsAfter = getVisiblePaths(container);
+    const dAfter = pathsAfter[0].getAttribute('d')!;
     // sx = dayToPixel(0 + 6) = 240
     expect(dAfter).toContain('240');
     // The old value should no longer appear as start x
     expect(dAfter).not.toMatch(/^M 120 /);
+  });
+
+  it('renders arrows with low opacity by default', () => {
+    useProjectStore.setState({
+      tasks: [
+        { id: 't1', name: 'A', startDayIndex: 0, durationDays: 3, color: '#3B82F6', sortOrder: 0 },
+        { id: 't2', name: 'B', startDayIndex: 5, durationDays: 2, color: '#10B981', sortOrder: 1 },
+      ],
+      dependencies: [{ id: 'd1', fromTaskId: 't1', toTaskId: 't2' }],
+      computedStarts: new Map([['t1', 0], ['t2', 5]]),
+    });
+
+    const { container } = render(<DependencyArrows {...defaultProps} />);
+    const paths = getVisiblePaths(container);
+    expect(paths[0].getAttribute('stroke-opacity')).toBe('0.3');
+  });
+
+  it('selects a dependency when its arrow is clicked', () => {
+    useProjectStore.setState({
+      tasks: [
+        { id: 't1', name: 'A', startDayIndex: 0, durationDays: 3, color: '#3B82F6', sortOrder: 0 },
+        { id: 't2', name: 'B', startDayIndex: 5, durationDays: 2, color: '#10B981', sortOrder: 1 },
+      ],
+      dependencies: [{ id: 'd1', fromTaskId: 't1', toTaskId: 't2' }],
+      computedStarts: new Map([['t1', 0], ['t2', 5]]),
+    });
+
+    const { getByTestId } = render(<DependencyArrows {...defaultProps} />);
+    const arrowGroup = getByTestId('dep-arrow-d1');
+    fireEvent.click(arrowGroup);
+
+    expect(useProjectStore.getState().selectedDependencyId).toBe('d1');
+  });
+
+  it('renders selected dependency with full opacity and highlight color', () => {
+    useProjectStore.setState({
+      tasks: [
+        { id: 't1', name: 'A', startDayIndex: 0, durationDays: 3, color: '#3B82F6', sortOrder: 0 },
+        { id: 't2', name: 'B', startDayIndex: 5, durationDays: 2, color: '#10B981', sortOrder: 1 },
+      ],
+      dependencies: [{ id: 'd1', fromTaskId: 't1', toTaskId: 't2' }],
+      computedStarts: new Map([['t1', 0], ['t2', 5]]),
+      selectedDependencyId: 'd1',
+    });
+
+    const { container } = render(<DependencyArrows {...defaultProps} />);
+    const paths = getVisiblePaths(container);
+    expect(paths[0].getAttribute('stroke-opacity')).toBe('1');
+    expect(paths[0].getAttribute('stroke')).toBe('#3B82F6');
+    expect(paths[0].getAttribute('stroke-width')).toBe('2');
   });
 });

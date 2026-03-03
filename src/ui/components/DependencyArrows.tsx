@@ -1,4 +1,4 @@
-import { useMemo, useId } from 'react';
+import { useMemo, useId, useState, useCallback } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { ROW_HEIGHT } from '../constants';
 import { BAR_HEIGHT } from './TaskBar';
@@ -17,8 +17,27 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
   const dependencies = useProjectStore((s) => s.dependencies);
   const computedStarts = useProjectStore((s) => s.computedStarts);
   const dragOverrides = useProjectStore((s) => s.dragOverrides);
+  const selectedDependencyId = useProjectStore((s) => s.selectedDependencyId);
+  const selectDependency = useProjectStore((s) => s.selectDependency);
   const markerId = useId();
   const dashedMarkerId = `${markerId}-dashed`;
+  const [hoveredDepId, setHoveredDepId] = useState<string | null>(null);
+
+  const handleArrowClick = useCallback(
+    (depId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      selectDependency(depId);
+    },
+    [selectDependency]
+  );
+
+  const handleMouseEnter = useCallback((depId: string) => {
+    setHoveredDepId(depId);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredDepId(null);
+  }, []);
 
   const collapsedGroupIds = useMemo(
     () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
@@ -88,15 +107,34 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
       const ty = barCenterY(toRow);
 
       const arrowPath = buildArrowPath(sx, sy, tx, ty);
+      const isSelected = selectedDependencyId === dep.id;
+      const isHovered = hoveredDepId === dep.id;
+      const opacity = isSelected || isHovered ? 1 : 0.3;
+      const strokeColor = isSelected ? '#3B82F6' : '#9CA3AF';
 
       return (
-        <g key={dep.id}>
+        <g
+          key={dep.id}
+          style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+          onMouseEnter={() => handleMouseEnter(dep.id)}
+          onMouseLeave={handleMouseLeave}
+          onClick={(e) => handleArrowClick(dep.id, e)}
+          data-testid={`dep-arrow-${dep.id}`}
+        >
+          {/* Invisible wider hit area */}
           <path
             d={arrowPath}
             fill="none"
-            stroke="#9CA3AF"
-            strokeWidth={1.5}
-            markerEnd={`url(#${markerId})`}
+            stroke="transparent"
+            strokeWidth={12}
+          />
+          <path
+            d={arrowPath}
+            fill="none"
+            stroke={strokeColor}
+            strokeWidth={isSelected ? 2 : 1.5}
+            strokeOpacity={opacity}
+            markerEnd={`url(#${isSelected ? `${markerId}-selected` : isHovered ? `${markerId}-hovered` : markerId})`}
           />
         </g>
       );
@@ -128,17 +166,35 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
     const ty = barCenterY(effectiveToRow);
 
     const arrowPath = buildArrowPath(sx, sy, tx, ty);
+    const isSelected = selectedDependencyId === dep.id;
+    const isHovered = hoveredDepId === dep.id;
+    const opacity = isSelected || isHovered ? 0.8 : 0.2;
+    const strokeColor = isSelected ? '#3B82F6' : '#9CA3AF';
 
     return (
-      <g key={dep.id} data-testid={`dep-arrow-collapsed-${dep.id}`}>
+      <g
+        key={dep.id}
+        data-testid={`dep-arrow-collapsed-${dep.id}`}
+        style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+        onMouseEnter={() => handleMouseEnter(dep.id)}
+        onMouseLeave={handleMouseLeave}
+        onClick={(e) => handleArrowClick(dep.id, e)}
+      >
+        {/* Invisible wider hit area */}
         <path
           d={arrowPath}
           fill="none"
-          stroke="#9CA3AF"
-          strokeWidth={1.5}
+          stroke="transparent"
+          strokeWidth={12}
+        />
+        <path
+          d={arrowPath}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={isSelected ? 2 : 1.5}
           strokeDasharray="4 3"
-          strokeOpacity={0.6}
-          markerEnd={`url(#${dashedMarkerId})`}
+          strokeOpacity={opacity}
+          markerEnd={`url(#${isSelected ? `${markerId}-selected` : isHovered ? `${markerId}-hovered` : dashedMarkerId})`}
         />
       </g>
     );
@@ -149,8 +205,8 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
 
   return (
     <svg
-      className="absolute top-0 left-0 pointer-events-none"
-      style={{ width: '100%', height: totalHeight, overflow: 'visible' }}
+      className="absolute top-0 left-0"
+      style={{ width: '100%', height: totalHeight, overflow: 'visible', pointerEvents: 'none' }}
     >
       <defs>
         <marker
@@ -161,7 +217,27 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
           refY="3"
           orient="auto"
         >
+          <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF" fillOpacity="0.3" />
+        </marker>
+        <marker
+          id={`${markerId}-hovered`}
+          markerWidth="8"
+          markerHeight="6"
+          refX="8"
+          refY="3"
+          orient="auto"
+        >
           <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF" />
+        </marker>
+        <marker
+          id={`${markerId}-selected`}
+          markerWidth="8"
+          markerHeight="6"
+          refX="8"
+          refY="3"
+          orient="auto"
+        >
+          <polygon points="0 0, 8 3, 0 6" fill="#3B82F6" />
         </marker>
         <marker
           id={dashedMarkerId}
@@ -171,7 +247,7 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
           refY="3"
           orient="auto"
         >
-          <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF" fillOpacity="0.6" />
+          <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF" fillOpacity="0.2" />
         </marker>
       </defs>
       {arrows}

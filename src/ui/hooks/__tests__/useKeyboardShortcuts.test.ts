@@ -267,4 +267,46 @@ describe('useKeyboardShortcuts', () => {
       expect(state.editingTaskId).toBe(newTask!.id);
     });
   });
+
+  describe('dependency deletion', () => {
+    it('Delete removes a selected dependency', async () => {
+      useProjectStore.setState({
+        selectedTaskIds: [],
+        selectionAnchorId: null,
+        selectedGroupId: null,
+        selectedDependencyId: 'dep1',
+        dependencies: [{ id: 'dep1', fromTaskId: 'a', toTaskId: 'b' }],
+      });
+
+      renderHook(() => useKeyboardShortcuts());
+      await act(async () => {
+        fireKey('Delete');
+        await new Promise((r) => setTimeout(r, 50));
+      });
+
+      const state = useProjectStore.getState();
+      expect(state.dependencies).toHaveLength(0);
+      expect(state.selectedDependencyId).toBeNull();
+    });
+
+    it('Delete prefers task deletion over dependency deletion', async () => {
+      useProjectStore.setState({
+        selectedTaskIds: ['a'],
+        selectionAnchorId: 'a',
+        selectedDependencyId: 'dep1',
+        dependencies: [{ id: 'dep1', fromTaskId: 'b', toTaskId: 'c' }],
+      });
+
+      renderHook(() => useKeyboardShortcuts());
+      await act(async () => {
+        fireKey('Delete');
+        await new Promise((r) => setTimeout(r, 50));
+      });
+
+      const state = useProjectStore.getState();
+      // Task 'a' should be deleted but dependency (between b and c) should remain
+      expect(state.tasks.find((t) => t.id === 'a')).toBeUndefined();
+      expect(state.dependencies).toHaveLength(1);
+    });
+  });
 });

@@ -8,6 +8,7 @@ export function useKeyboardShortcuts() {
   const groups = useProjectStore((s) => s.groups);
   const selectedTaskIds = useProjectStore((s) => s.selectedTaskIds);
   const selectedGroupId = useProjectStore((s) => s.selectedGroupId);
+  const selectedDependencyId = useProjectStore((s) => s.selectedDependencyId);
   const editingTaskId = useProjectStore((s) => s.editingTaskId);
   const selectTask = useProjectStore((s) => s.selectTask);
   const selectGroup = useProjectStore((s) => s.selectGroup);
@@ -16,6 +17,7 @@ export function useKeyboardShortcuts() {
   const addGroup = useProjectStore((s) => s.addGroup);
   const removeTask = useProjectStore((s) => s.removeTask);
   const removeGroupWithChildren = useProjectStore((s) => s.removeGroupWithChildren);
+  const removeDependency = useProjectStore((s) => s.removeDependency);
   const addDependency = useProjectStore((s) => s.addDependency);
   const setEditingTaskId = useProjectStore((s) => s.setEditingTaskId);
   const setEditingGroupId = useProjectStore((s) => s.setEditingGroupId);
@@ -122,6 +124,9 @@ export function useKeyboardShortcuts() {
           if (await confirmDialog(message)) {
             await removeGroupWithChildren(selectedGroupId);
           }
+        } else if (selectedDependencyId) {
+          e.preventDefault();
+          await removeDependency(selectedDependencyId);
         }
         return;
       }
@@ -250,6 +255,7 @@ export function useKeyboardShortcuts() {
       selectedTaskId,
       selectedTaskIds,
       selectedGroupId,
+      selectedDependencyId,
       editingTaskId,
       selectTask,
       selectGroup,
@@ -258,6 +264,7 @@ export function useKeyboardShortcuts() {
       addGroup,
       removeTask,
       removeGroupWithChildren,
+      removeDependency,
       addDependency,
       setEditingTaskId,
       setEditingGroupId,

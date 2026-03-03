@@ -166,6 +166,34 @@ describe('useProjectStore', () => {
     expect(useProjectStore.getState().selectedTaskIds).toHaveLength(0);
   });
 
+  it('selectDependency sets selectedDependencyId and clears other selections', () => {
+    useProjectStore.setState({ selectedTaskIds: ['t1'], selectedGroupId: 'g1' });
+
+    useProjectStore.getState().selectDependency('d1');
+
+    const state = useProjectStore.getState();
+    expect(state.selectedDependencyId).toBe('d1');
+    expect(state.selectedTaskIds).toHaveLength(0);
+    expect(state.selectedGroupId).toBeNull();
+  });
+
+  it('selectTask clears selectedDependencyId', () => {
+    useProjectStore.setState({ selectedDependencyId: 'd1' });
+
+    useProjectStore.getState().selectTask('t1');
+
+    expect(useProjectStore.getState().selectedDependencyId).toBeNull();
+    expect(useProjectStore.getState().selectedTaskIds).toEqual(['t1']);
+  });
+
+  it('clearSelection clears selectedDependencyId', () => {
+    useProjectStore.setState({ selectedDependencyId: 'd1' });
+
+    useProjectStore.getState().clearSelection();
+
+    expect(useProjectStore.getState().selectedDependencyId).toBeNull();
+  });
+
   it('updateProject updates project fields', async () => {
     await useProjectStore.getState().updateProject({ name: 'My Project' });
 
