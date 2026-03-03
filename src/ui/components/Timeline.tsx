@@ -4,7 +4,6 @@ import { todayDayIndex, dayIndexToDate, dateToDayIndex } from '../../domain/cons
 import { useProjectStore } from '../../store/useProjectStore';
 import { TimelineHeader } from './TimelineHeader';
 import { TimelineBody } from './TimelineBody';
-import { TodayLine } from './TodayLine';
 import { LinkingLine } from './LinkingLine';
 import { ZOOM_CONFIGS, HEADER_HEIGHT, TOOLBAR_HEIGHT, STATUS_BAR_HEIGHT, getVisibleDays } from '../constants';
 
@@ -219,9 +218,6 @@ export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: Timel
           pixelsPerDay={pixelsPerDay}
           dayToPixel={dayToPixel}
         />
-
-        {/* Today line */}
-        <TodayLine dayToPixel={dayToPixel} />
 
         {/* Linking drag line */}
         <LinkingLine dayToPixel={dayToPixel} scrollContainer={scrollRef.current} sidebarWidth={sidebarWidth} />

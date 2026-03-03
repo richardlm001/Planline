@@ -2,6 +2,7 @@ import { useMemo, useCallback } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { TaskBar } from './TaskBar';
 import { DependencyArrows } from './DependencyArrows';
+import { TodayLine } from './TodayLine';
 import { ROW_HEIGHT } from '../constants';
 import { buildVisualRowMap } from './layoutUtils';
 
@@ -62,6 +63,9 @@ export function TimelineBody({ columnWidth, rangeStartDayIndex, pixelsPerDay, da
           style={{ top: (i + 1) * ROW_HEIGHT }}
         />
       ))}
+
+      {/* Today line (above row lines, below task bars) */}
+      <TodayLine dayToPixel={dayToPixel} />
 
       {/* Dependency arrows */}
       <DependencyArrows

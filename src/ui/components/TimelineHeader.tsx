@@ -16,8 +16,8 @@ export function TimelineHeader({ columns, columnWidth }: TimelineHeaderProps) {
         <div
           key={col.dayIndex}
           className={`flex-shrink-0 flex flex-col items-center justify-center text-xs border-r border-gray-100 ${
-            col.isWeekend ? 'bg-gray-50 text-gray-400' : 'text-gray-600'
-          } ${col.isToday ? 'font-bold text-blue-600' : ''}`}
+            col.isToday ? 'bg-blue-100 font-bold text-blue-600' : col.isWeekend ? 'bg-gray-50 text-gray-400' : 'text-gray-600'
+          }`}
           style={{ width: columnWidth }}
         >
           <span>{col.label}</span>

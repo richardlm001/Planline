@@ -20,6 +20,11 @@ export const TOOLBAR_HEIGHT = 37;
 export const STATUS_BAR_HEIGHT = 22;
 export const BASE_VISIBLE_DAYS = 90;
 
+/** Working hours used to position the today-line within a day column */
+export const WORKING_HOURS_START = 8;  // 8 AM
+export const WORKING_HOURS_END = 17;   // 5 PM
+export const TODAY_LINE_UPDATE_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
 /** Compute the number of visible days needed to fill the viewport at a given zoom level */
 export function getVisibleDays(zoomLevel: ZoomLevel, viewportWidth?: number): number {
   const config = ZOOM_CONFIGS[zoomLevel];
