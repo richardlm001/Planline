@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { HEADER_HEIGHT } from '../constants';
+import { HEADER_HEIGHT, TOOLBAR_HEIGHT } from '../constants';
 import { useProjectStore } from '../../store/useProjectStore';
 import { SidebarTaskRow } from './SidebarTaskRow';
 import { SidebarGroupRow } from './SidebarGroupRow';
@@ -141,36 +141,37 @@ export function Sidebar({ scrollRef }: SidebarProps) {
 
   return (
     <div className="flex flex-col h-full" onDragEnd={handleDragEnd}>
-      {/* Project name */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+      {/* Project name — explicit height to match timeline toolbar */}
+      <div className="flex items-center justify-between px-3 border-b border-gray-200 flex-shrink-0" style={{ height: TOOLBAR_HEIGHT }}>
         <ProjectHeader />
         <ExportImportButtons />
       </div>
-      <div
-        className="flex items-center justify-between px-3 font-semibold text-sm text-gray-500 border-b border-gray-200 flex-shrink-0"
-        style={{ height: HEADER_HEIGHT }}
-      >
-        <span>Tasks</span>
-        <div className="flex gap-1">
-          <button
-            onClick={handleAddGroup}
-            className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 text-xs leading-none"
-            title="Add group"
-            data-testid="add-group-btn"
-          >
-            G+
-          </button>
-          <button
-            onClick={handleAddTask}
-            className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 text-lg leading-none"
-            title="Add task"
-            data-testid="add-task-btn"
-          >
-            +
-          </button>
-        </div>
-      </div>
       <div ref={scrollRef} data-testid="sidebar-scroll" className="flex-1 overflow-y-auto" onDragOver={handleListDragOver} onDrop={handleListDrop}>
+        {/* Sticky Tasks header — mirrors TimelineHeader inside scroll area */}
+        <div
+          className="sticky top-0 z-10 bg-gray-50 flex items-center justify-between px-3 font-semibold text-sm text-gray-500 border-b border-gray-200"
+          style={{ height: HEADER_HEIGHT }}
+        >
+          <span>Tasks</span>
+          <div className="flex gap-1">
+            <button
+              onClick={handleAddGroup}
+              className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 text-xs leading-none"
+              title="Add group"
+              data-testid="add-group-btn"
+            >
+              G+
+            </button>
+            <button
+              onClick={handleAddTask}
+              className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 text-lg leading-none"
+              title="Add task"
+              data-testid="add-task-btn"
+            >
+              +
+            </button>
+          </div>
+        </div>
         {/* Ungrouped tasks first */}
         {ungroupedTasks.map((task) => (
           <SidebarTaskRow
@@ -210,9 +211,9 @@ export function Sidebar({ scrollRef }: SidebarProps) {
             </div>
           );
         })}
+        <SavedIndicator />
+        <DebugButton />
       </div>
-      <SavedIndicator />
-      <DebugButton />
     </div>
   );
 }

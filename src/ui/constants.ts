@@ -14,6 +14,7 @@ export const ZOOM_CONFIGS: Record<ZoomLevel, ZoomConfig> = {
 export const SIDEBAR_WIDTH = 260;
 export const ROW_HEIGHT = 40;
 export const HEADER_HEIGHT = 48;
+export const TOOLBAR_HEIGHT = 37;
 export const BASE_VISIBLE_DAYS = 90;
 
 /** Compute the number of visible days needed to fill the viewport at a given zoom level */

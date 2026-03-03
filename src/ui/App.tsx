@@ -43,20 +43,20 @@ function App() {
     const timeline = timelineScrollRef.current;
     if (!sidebar || !timeline) return;
 
-    let ticking = false;
+    let scrollingEl: HTMLDivElement | null = null;
 
     const handleSidebarScroll = () => {
-      if (ticking) return;
-      ticking = true;
+      if (scrollingEl && scrollingEl !== sidebar) return;
+      scrollingEl = sidebar;
       timeline.scrollTop = sidebar.scrollTop;
-      requestAnimationFrame(() => { ticking = false; });
+      requestAnimationFrame(() => { scrollingEl = null; });
     };
 
     const handleTimelineScroll = () => {
-      if (ticking) return;
-      ticking = true;
+      if (scrollingEl && scrollingEl !== timeline) return;
+      scrollingEl = timeline;
       sidebar.scrollTop = timeline.scrollTop;
-      requestAnimationFrame(() => { ticking = false; });
+      requestAnimationFrame(() => { scrollingEl = null; });
     };
 
     sidebar.addEventListener('scroll', handleSidebarScroll);

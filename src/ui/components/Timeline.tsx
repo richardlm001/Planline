@@ -7,7 +7,7 @@ import { TimelineBody } from './TimelineBody';
 import { TodayLine } from './TodayLine';
 import { LinkingLine } from './LinkingLine';
 import { ZoomToggle } from './ZoomToggle';
-import { ZOOM_CONFIGS, HEADER_HEIGHT, getVisibleDays } from '../constants';
+import { ZOOM_CONFIGS, HEADER_HEIGHT, TOOLBAR_HEIGHT, getVisibleDays } from '../constants';
 
 function useTodayIndex(): number {
   const [today, setToday] = useState(() => todayDayIndex());
@@ -195,8 +195,8 @@ export function Timeline({ scrollRef: scrollRefProp }: TimelineProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Toolbar with zoom toggle */}
-      <div className="flex items-center justify-end px-3 py-1.5 border-b border-gray-200 bg-white flex-shrink-0">
+      {/* Toolbar with zoom toggle — explicit height to match sidebar toolbar */}
+      <div className="flex items-center justify-end px-3 border-b border-gray-200 bg-white flex-shrink-0" style={{ height: TOOLBAR_HEIGHT }}>
         <ZoomToggle />
       </div>
       <div ref={scrollRef} data-testid="timeline-scroll" className="flex-1 overflow-x-auto overflow-y-auto">
