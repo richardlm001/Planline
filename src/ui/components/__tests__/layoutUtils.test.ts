@@ -32,7 +32,7 @@ describe('buildVisualRowMap', () => {
     expect(result.visibleTasks).toHaveLength(3);
   });
 
-  it('places ungrouped tasks before group headers', () => {
+  it('interleaves ungrouped tasks and groups by sortOrder', () => {
     const tasks = [
       makeTask({ id: 'ungrouped', sortOrder: 0 }),
       makeTask({ id: 'grouped', sortOrder: 1, groupId: 'g1' }),
@@ -40,12 +40,31 @@ describe('buildVisualRowMap', () => {
     const groups = [makeGroup({ id: 'g1', sortOrder: 0 })];
     const result = buildVisualRowMap(tasks, groups, new Set());
 
+    // Both ungrouped task and group have sortOrder 0.
+    // Stable sort keeps ungrouped task first (added before group).
     // Row 0: ungrouped task
     // Row 1: group header
     // Row 2: grouped task
     expect(result.taskRowIndex.get('ungrouped')).toBe(0);
     expect(result.groupHeaderRowIndex.get('g1')).toBe(1);
     expect(result.taskRowIndex.get('grouped')).toBe(2);
+    expect(result.totalVisualRows).toBe(3);
+  });
+
+  it('places ungrouped task after group when its sortOrder is higher', () => {
+    const tasks = [
+      makeTask({ id: 'ungrouped', sortOrder: 5 }),
+      makeTask({ id: 'grouped', sortOrder: 1, groupId: 'g1' }),
+    ];
+    const groups = [makeGroup({ id: 'g1', sortOrder: 0 })];
+    const result = buildVisualRowMap(tasks, groups, new Set());
+
+    // Row 0: g1 header (sortOrder 0)
+    // Row 1: grouped task (child of g1)
+    // Row 2: ungrouped task (sortOrder 5)
+    expect(result.groupHeaderRowIndex.get('g1')).toBe(0);
+    expect(result.taskRowIndex.get('grouped')).toBe(1);
+    expect(result.taskRowIndex.get('ungrouped')).toBe(2);
     expect(result.totalVisualRows).toBe(3);
   });
 

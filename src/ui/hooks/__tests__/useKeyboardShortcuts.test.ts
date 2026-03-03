@@ -235,7 +235,7 @@ describe('useKeyboardShortcuts', () => {
       expect(state.editingTaskId).toBe(newTask!.id);
     });
 
-    it('Enter on collapsed group creates ungrouped task', async () => {
+    it('Enter on collapsed group creates ungrouped sibling below the group', async () => {
       useProjectStore.setState({
         groups: [{ id: 'g1', name: 'Group 1', sortOrder: 0.5, collapsed: true }],
         selectedTaskIds: [],
@@ -252,8 +252,13 @@ describe('useKeyboardShortcuts', () => {
       expect(newTask).toBeDefined();
       // Should NOT be a child of the group (ungrouped sibling)
       expect(newTask!.groupId).toBeUndefined();
-      // sortOrder should be after the last ungrouped task (a has sortOrder 0)
+      // The only top-level items are: task 'a' (sortOrder 0) and group 'g1' (sortOrder 0.5).
+      // Group is the last top-level item, so nextOrder = 0.5 + 1 = 1.5
+      // newSortOrder = (0.5 + 1.5) / 2 = 1
       expect(newTask!.sortOrder).toBe(1);
+      // Group should remain collapsed
+      const group = state.groups.find((g) => g.id === 'g1');
+      expect(group!.collapsed).toBe(true);
       // Should be selected and in editing mode
       expect(state.selectedTaskIds).toEqual([newTask!.id]);
       expect(state.editingTaskId).toBe(newTask!.id);

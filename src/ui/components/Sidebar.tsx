@@ -46,6 +46,24 @@ export function Sidebar({ width }: SidebarProps) {
     return { ungroupedTasks: ungrouped, groupedTasks: grouped };
   }, [sortedTasks]);
 
+  // Build a unified top-level list interleaving ungrouped tasks and groups by sortOrder
+  const topLevelItems = useMemo(() => {
+    type Item =
+      | { type: 'task'; task: typeof sortedTasks[0]; sortOrder: number }
+      | { type: 'group'; group: typeof sortedGroups[0]; sortOrder: number; children: typeof sortedTasks };
+    const items: Item[] = [
+      ...ungroupedTasks.map((task) => ({ type: 'task' as const, task, sortOrder: task.sortOrder })),
+      ...sortedGroups.map((group) => ({
+        type: 'group' as const,
+        group,
+        sortOrder: group.sortOrder,
+        children: groupedTasks.get(group.id) ?? [],
+      })),
+    ];
+    items.sort((a, b) => a.sortOrder - b.sortOrder);
+    return items;
+  }, [ungroupedTasks, sortedGroups, groupedTasks]);
+
   const handleAddTask = useCallback(async () => {
     const task = await addTask();
     selectTask(task.id);
@@ -173,32 +191,30 @@ export function Sidebar({ width }: SidebarProps) {
 
         {/* Task list */}
         <div className="flex-1">
-        {/* Ungrouped tasks first */}
-        {ungroupedTasks.map((task) => (
-          <SidebarTaskRow
-            key={task.id}
-            task={task}
-            indented={false}
-            onDragStart={handleTaskDragStart}
-            onDragOver={(e) => handleTaskDragOver(e, task.id)}
-            onDrop={handleDrop}
-            isDragOver={dragOverItemId === task.id && dragOverType === 'task'}
-          />
-        ))}
-
-        {/* Groups with their children */}
-        {sortedGroups.map((group) => {
-          const children = groupedTasks.get(group.id) ?? [];
-          return (
-            <div key={group.id}>
-              <SidebarGroupRow
-                group={group}
-                onDragOver={(e) => handleGroupDragOver(e, group.id)}
+        {topLevelItems.map((item) => {
+          if (item.type === 'task') {
+            return (
+              <SidebarTaskRow
+                key={item.task.id}
+                task={item.task}
+                indented={false}
+                onDragStart={handleTaskDragStart}
+                onDragOver={(e) => handleTaskDragOver(e, item.task.id)}
                 onDrop={handleDrop}
-                isDragOver={dragOverItemId === group.id && dragOverType === 'group'}
+                isDragOver={dragOverItemId === item.task.id && dragOverType === 'task'}
               />
-              {!group.collapsed &&
-                children.map((task) => (
+            );
+          }
+          return (
+            <div key={item.group.id}>
+              <SidebarGroupRow
+                group={item.group}
+                onDragOver={(e) => handleGroupDragOver(e, item.group.id)}
+                onDrop={handleDrop}
+                isDragOver={dragOverItemId === item.group.id && dragOverType === 'group'}
+              />
+              {!item.group.collapsed &&
+                item.children.map((task) => (
                   <SidebarTaskRow
                     key={task.id}
                     task={task}

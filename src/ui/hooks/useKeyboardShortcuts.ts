@@ -150,11 +150,20 @@ export function useKeyboardShortcuts() {
             newGroupId = selectedGroupId;
             newSortOrder = maxChildOrder + 1;
           } else {
-            // Collapsed group → add as ungrouped task (sibling below)
-            const maxUngroupedOrder = sortedTasks
-              .filter((t) => !t.groupId)
-              .reduce((max, t) => Math.max(max, t.sortOrder), -1);
-            newSortOrder = maxUngroupedOrder + 1;
+            // Collapsed group → add as ungrouped sibling below the group
+            const groupOrder = group!.sortOrder;
+            // Build sorted top-level items to find the next one after this group
+            const topLevelItems = [
+              ...sortedTasks.filter((t) => !t.groupId).map((t) => ({ sortOrder: t.sortOrder, id: t.id })),
+              ...groups.map((g) => ({ sortOrder: g.sortOrder, id: g.id })),
+            ];
+            topLevelItems.sort((a, b) => a.sortOrder - b.sortOrder);
+            const groupIdx = topLevelItems.findIndex((item) => item.id === selectedGroupId);
+            const nextOrder = groupIdx < topLevelItems.length - 1
+              ? topLevelItems[groupIdx + 1].sortOrder
+              : groupOrder + 1;
+            newSortOrder = (groupOrder + nextOrder) / 2;
+            // newGroupId stays undefined → ungrouped
           }
         } else if (selectedTaskId) {
           // Insert after selected task with midpoint sortOrder

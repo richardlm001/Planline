@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
-import { ROW_HEIGHT } from '../constants';
+import { ROW_HEIGHT, HEADER_HEIGHT } from '../constants';
 import { BAR_HEIGHT } from './TaskBar';
+import { buildVisualRowMap } from './layoutUtils';
 
 interface LinkingLineProps {
   dayToPixel: (dayIndex: number) => number;
@@ -24,14 +25,16 @@ export function LinkingLine({ dayToPixel, scrollContainer, sidebarWidth = 250 }:
     ? tasks.find((t) => t.id === linkingFromTaskId)
     : undefined;
 
-  // Compute visible row index for the source task
-  const collapsedGroupIds = new Set(
-    groups.filter((g) => g.collapsed).map((g) => g.id)
+  // Compute visible row index for the source task using the same layout as TimelineBody
+  const collapsedGroupIds = useMemo(
+    () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
+    [groups]
   );
-  const sortedVisibleTasks = [...tasks]
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .filter((t) => !t.groupId || !collapsedGroupIds.has(t.groupId));
-  const rowIndex = task ? sortedVisibleTasks.findIndex((t) => t.id === task.id) : -1;
+  const { taskRowIndex } = useMemo(
+    () => buildVisualRowMap(tasks, groups, collapsedGroupIds),
+    [tasks, groups, collapsedGroupIds]
+  );
+  const rowIndex = task ? (taskRowIndex.get(task.id) ?? -1) : -1;
 
   // Source point: right edge center of the source task bar
   const sourcePoint =
@@ -50,10 +53,10 @@ export function LinkingLine({ dayToPixel, scrollContainer, sidebarWidth = 250 }:
       const rect = scrollContainer.getBoundingClientRect();
       setCursorPos({
         x: e.clientX - rect.left + scrollContainer.scrollLeft - sidebarWidth,
-        y: e.clientY - rect.top + scrollContainer.scrollTop,
+        y: e.clientY - rect.top + scrollContainer.scrollTop - HEADER_HEIGHT,
       });
     },
-    [scrollContainer]
+    [scrollContainer, sidebarWidth]
   );
 
   const handlePointerUp = useCallback(

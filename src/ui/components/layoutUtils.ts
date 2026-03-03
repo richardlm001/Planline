@@ -18,11 +18,10 @@ export interface VisualRowMap {
 }
 
 /**
- * Build a visual row mapping that matches the sidebar's rendering order:
- * 1. Ungrouped tasks (sorted by sortOrder)
- * 2. For each group (sorted by group sortOrder):
- *    - Group header row (takes one row)
- *    - If not collapsed: group's children (sorted by task sortOrder)
+ * Build a visual row mapping that matches the sidebar's rendering order.
+ * Top-level items (ungrouped tasks and group headers) are interleaved
+ * by sortOrder. Each group header is followed by its children (sorted
+ * by task sortOrder) unless the group is collapsed.
  */
 export function buildVisualRowMap(
   tasks: Task[],
@@ -30,7 +29,6 @@ export function buildVisualRowMap(
   collapsedGroupIds: Set<string>,
 ): VisualRowMap {
   const sortedTasks = [...tasks].sort((a, b) => a.sortOrder - b.sortOrder);
-  const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
 
   const ungrouped = sortedTasks.filter((t) => !t.groupId);
   const grouped = new Map<string, Task[]>();
@@ -42,33 +40,42 @@ export function buildVisualRowMap(
     }
   }
 
+  // Build a unified list of top-level entries sorted by sortOrder
+  type TopLevelEntry =
+    | { type: 'task'; task: Task; sortOrder: number }
+    | { type: 'group'; group: Group; sortOrder: number };
+
+  const topLevel: TopLevelEntry[] = [
+    ...ungrouped.map((task) => ({ type: 'task' as const, task, sortOrder: task.sortOrder })),
+    ...([...groups].map((group) => ({ type: 'group' as const, group, sortOrder: group.sortOrder }))),
+  ];
+  topLevel.sort((a, b) => a.sortOrder - b.sortOrder);
+
   const taskRowIndex = new Map<string, number>();
   const groupHeaderRowIndex = new Map<string, number>();
   const visibleTasks: Task[] = [];
   const rowItems: VisualRowItem[] = [];
   let currentRow = 0;
 
-  // Ungrouped tasks first
-  for (const task of ungrouped) {
-    taskRowIndex.set(task.id, currentRow);
-    visibleTasks.push(task);
-    rowItems.push({ type: 'task', task });
-    currentRow++;
-  }
+  for (const entry of topLevel) {
+    if (entry.type === 'task') {
+      taskRowIndex.set(entry.task.id, currentRow);
+      visibleTasks.push(entry.task);
+      rowItems.push({ type: 'task', task: entry.task });
+      currentRow++;
+    } else {
+      groupHeaderRowIndex.set(entry.group.id, currentRow);
+      rowItems.push({ type: 'group-header', group: entry.group });
+      currentRow++;
 
-  // Groups with their children
-  for (const group of sortedGroups) {
-    groupHeaderRowIndex.set(group.id, currentRow);
-    rowItems.push({ type: 'group-header', group });
-    currentRow++; // group header takes a row
-
-    if (!collapsedGroupIds.has(group.id)) {
-      const children = grouped.get(group.id) ?? [];
-      for (const task of children) {
-        taskRowIndex.set(task.id, currentRow);
-        visibleTasks.push(task);
-        rowItems.push({ type: 'task', task });
-        currentRow++;
+      if (!collapsedGroupIds.has(entry.group.id)) {
+        const children = grouped.get(entry.group.id) ?? [];
+        for (const task of children) {
+          taskRowIndex.set(task.id, currentRow);
+          visibleTasks.push(task);
+          rowItems.push({ type: 'task', task });
+          currentRow++;
+        }
       }
     }
   }
