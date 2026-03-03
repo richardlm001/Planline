@@ -61,6 +61,35 @@ describe('useKeyboardShortcuts', () => {
     expect(useProjectStore.getState().selectedTaskIds).toHaveLength(0);
   });
 
+  it('Shift+Enter creates a new group', async () => {
+    renderHook(() => useKeyboardShortcuts());
+    await act(async () => {
+      fireKey('Enter', { shiftKey: true });
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const state = useProjectStore.getState();
+    // Should have a new group
+    expect(state.groups.length).toBe(1);
+    expect(state.groups[0].name).toBe('New group');
+    // Tasks should remain unchanged
+    expect(state.tasks.length).toBe(3);
+    // sortOrder should be between task A (0) and task B (1)
+    expect(state.groups[0].sortOrder).toBe(0.5);
+  });
+
+  it('Shift+Enter without selection appends group at end', async () => {
+    useProjectStore.setState({ selectedTaskIds: [], selectionAnchorId: null });
+    renderHook(() => useKeyboardShortcuts());
+    await act(async () => {
+      fireKey('Enter', { shiftKey: true });
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const state = useProjectStore.getState();
+    expect(state.groups.length).toBe(1);
+    // No selected task → addGroup with default sortOrder (max + 1 = 0 since no groups exist)
+    expect(state.groups[0].sortOrder).toBe(0);
+  });
+
   it('Tab creates a dependent task', async () => {
     renderHook(() => useKeyboardShortcuts());
     await act(async () => {

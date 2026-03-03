@@ -8,6 +8,7 @@ export function useKeyboardShortcuts() {
   const selectTask = useProjectStore((s) => s.selectTask);
   const clearSelection = useProjectStore((s) => s.clearSelection);
   const addTask = useProjectStore((s) => s.addTask);
+  const addGroup = useProjectStore((s) => s.addGroup);
   const removeTask = useProjectStore((s) => s.removeTask);
   const addDependency = useProjectStore((s) => s.addDependency);
   const setEditingTaskId = useProjectStore((s) => s.setEditingTaskId);
@@ -94,6 +95,14 @@ export function useKeyboardShortcuts() {
           insertSortOrder = (currentOrder + nextOrder) / 2;
         }
 
+        if (e.shiftKey) {
+          // Shift+Enter creates a new group
+          await addGroup(
+            insertSortOrder !== undefined ? { sortOrder: insertSortOrder } : undefined
+          );
+          return;
+        }
+
         const newTask = await addTask(
           insertSortOrder !== undefined ? { sortOrder: insertSortOrder } : undefined
         );
@@ -146,6 +155,7 @@ export function useKeyboardShortcuts() {
       selectTask,
       clearSelection,
       addTask,
+      addGroup,
       removeTask,
       addDependency,
       setEditingTaskId,
