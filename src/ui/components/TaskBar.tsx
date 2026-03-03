@@ -240,7 +240,7 @@ export const TaskBar = memo(function TaskBar({
         onPointerUp={handleResizePointerUp}
       />
 
-      <span className="truncate px-2 pointer-events-none">{task.name}</span>
+      <span className="truncate px-2.5 pointer-events-none">{task.name}</span>
 
       {/* Right resize handle */}
       <div

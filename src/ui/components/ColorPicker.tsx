@@ -7,6 +7,14 @@ interface ColorPickerProps {
   currentColor: string;
 }
 
+function darkenHex(hex: string, amount = 0.25): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const r = Math.max(0, ((n >> 16) & 0xff) * (1 - amount));
+  const g = Math.max(0, ((n >> 8) & 0xff) * (1 - amount));
+  const b = Math.max(0, (n & 0xff) * (1 - amount));
+  return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+}
+
 export function ColorPicker({ taskId, currentColor }: ColorPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const updateTask = useProjectStore((s) => s.updateTask);
@@ -24,10 +32,10 @@ export function ColorPicker({ taskId, currentColor }: ColorPickerProps) {
   }, [isOpen]);
 
   return (
-    <div className="relative" ref={popoverRef}>
+    <div className="relative flex items-center" ref={popoverRef}>
       <button
-        className="w-3.5 h-3.5 rounded-full border border-white/50 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-white/50"
-        style={{ backgroundColor: currentColor }}
+        className="w-2.5 h-2.5 rounded-full border flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-white/50"
+        style={{ backgroundColor: currentColor, borderColor: darkenHex(currentColor, 0.25) }}
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen(!isOpen);

@@ -80,10 +80,10 @@ export function SidebarTaskRow({ task, indented = false, onDragStart, onDragOver
 
   return (
     <div
-      className={`flex items-center cursor-pointer select-none text-sm border-b border-gray-100 ${
+      className={`group flex items-center cursor-pointer select-none text-sm border-b border-gray-100 ${
         isSelected ? 'bg-blue-50 text-blue-900' : 'hover:bg-gray-100'
       } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
-      style={{ height: ROW_HEIGHT, paddingLeft: indented ? 28 : 12, paddingRight: 12 }}
+      style={{ height: ROW_HEIGHT, paddingLeft: indented ? 14 : 6, paddingRight: 12 }}
       onClick={(e) => selectTask(task.id, { shift: e.shiftKey, meta: e.metaKey || e.ctrlKey })}
       onDoubleClick={startEditing}
       onKeyDown={handleKeyDown}
@@ -95,11 +95,11 @@ export function SidebarTaskRow({ task, indented = false, onDragStart, onDragOver
       onDrop={onDrop}
     >
       {/* Drag handle */}
-      <div className="flex-shrink-0 cursor-grab text-gray-300 hover:text-gray-500 mr-1 text-xs select-none" data-testid={`drag-handle-${task.id}`}>
+      <div className="flex-shrink-0 cursor-grab text-gray-300 hover:text-gray-500 mr-1 text-xs select-none opacity-0 group-hover:opacity-100 transition-opacity" data-testid={`drag-handle-${task.id}`}>
         ⠿
       </div>
       <ColorPicker taskId={task.id} currentColor={task.color} />
-      <div className="w-1 flex-shrink-0" />
+      <div className="w-2 flex-shrink-0" />
       {isEditing ? (
         <input
           ref={inputRef}
