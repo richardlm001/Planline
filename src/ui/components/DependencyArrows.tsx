@@ -142,7 +142,7 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
 
   return (
     <svg
-      className="absolute top-0 left-0 pointer-events-none z-5"
+      className="absolute top-0 left-0 pointer-events-none"
       style={{ width: '100%', height: totalHeight, overflow: 'visible' }}
     >
       <defs>
