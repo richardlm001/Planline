@@ -6,7 +6,7 @@ import { TimelineHeader } from './TimelineHeader';
 import { TimelineBody } from './TimelineBody';
 import { TodayLine } from './TodayLine';
 import { LinkingLine } from './LinkingLine';
-import { ZOOM_CONFIGS, HEADER_HEIGHT, TOOLBAR_HEIGHT, getVisibleDays } from '../constants';
+import { ZOOM_CONFIGS, HEADER_HEIGHT, TOOLBAR_HEIGHT, STATUS_BAR_HEIGHT, getVisibleDays } from '../constants';
 
 function useTodayIndex(): number {
   const [today, setToday] = useState(() => todayDayIndex());
@@ -208,7 +208,7 @@ export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: Timel
               left: i * columnWidth,
               width: columnWidth,
               height: '100%',
-              minHeight: 'calc(100vh - ' + (TOOLBAR_HEIGHT + HEADER_HEIGHT) + 'px)',
+              minHeight: 'calc(100vh - ' + (TOOLBAR_HEIGHT + HEADER_HEIGHT + STATUS_BAR_HEIGHT) + 'px)',
             }}
           />
         ))}

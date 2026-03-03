@@ -22,6 +22,7 @@ interface ProjectState {
   // UI state
   selectedTaskIds: string[];
   selectionAnchorId: string | null;
+  selectedGroupId: string | null;
   editingTaskId: string | null;
   linkingFromTaskId: string | null;
   zoomLevel: ZoomLevel;
@@ -42,6 +43,7 @@ interface ProjectState {
   updateGroup: (id: string, partial: Partial<Group>) => Promise<void>;
   removeGroup: (id: string) => Promise<void>;
   selectTask: (id: string | null, opts?: { shift?: boolean; meta?: boolean }) => void;
+  selectGroup: (id: string | null) => void;
   clearSelection: () => void;
   moveTasksToPosition: (taskIds: string[], targetIndex: number, targetGroupId?: string) => Promise<void>;
   setEditingTaskId: (id: string | null) => void;
@@ -81,6 +83,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   cycleTaskIds: [],
   selectedTaskIds: [],
   selectionAnchorId: null,
+  selectedGroupId: null,
   editingTaskId: null,
   linkingFromTaskId: null,
   zoomLevel: 'day' as ZoomLevel,
@@ -340,7 +343,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
   selectTask: (id: string | null, opts?: { shift?: boolean; meta?: boolean }) => {
     if (id === null) {
-      set({ selectedTaskIds: [], selectionAnchorId: null });
+      set({ selectedTaskIds: [], selectionAnchorId: null, selectedGroupId: null });
       return;
     }
 
@@ -352,7 +355,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       const newIds = isAlreadySelected
         ? state.selectedTaskIds.filter((sid) => sid !== id)
         : [...state.selectedTaskIds, id];
-      set({ selectedTaskIds: newIds, selectionAnchorId: id });
+      set({ selectedTaskIds: newIds, selectionAnchorId: id, selectedGroupId: null });
       return;
     }
 
@@ -371,11 +374,15 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     }
 
     // Plain click: select single task
-    set({ selectedTaskIds: [id], selectionAnchorId: id });
+    set({ selectedTaskIds: [id], selectionAnchorId: id, selectedGroupId: null });
+  },
+
+  selectGroup: (id: string | null) => {
+    set({ selectedGroupId: id, selectedTaskIds: [], selectionAnchorId: null });
   },
 
   clearSelection: () => {
-    set({ selectedTaskIds: [], selectionAnchorId: null });
+    set({ selectedTaskIds: [], selectionAnchorId: null, selectedGroupId: null });
   },
 
   moveTasksToPosition: async (taskIds: string[], targetIndex: number, targetGroupId?: string) => {

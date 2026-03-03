@@ -13,9 +13,13 @@ interface SidebarGroupRowProps {
 
 export function SidebarGroupRow({ group, onDragOver, onDrop, isDragOver = false }: SidebarGroupRowProps) {
   const updateGroup = useProjectStore((s) => s.updateGroup);
+  const selectedGroupId = useProjectStore((s) => s.selectedGroupId);
+  const selectGroup = useProjectStore((s) => s.selectGroup);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(group.name);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isSelected = selectedGroupId === group.id;
 
   const toggleCollapse = useCallback(
     (e: React.MouseEvent) => {
@@ -62,10 +66,13 @@ export function SidebarGroupRow({ group, onDragOver, onDrop, isDragOver = false 
 
   return (
     <div
-      className={`flex items-center px-2 cursor-pointer select-none text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100 bg-gray-50 hover:bg-gray-100 ${
+      className={`flex items-center px-2 cursor-pointer select-none text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100 hover:bg-gray-100 ${
+        isSelected ? 'bg-blue-50' : 'bg-gray-50'
+      } ${
         isDragOver ? 'ring-2 ring-inset ring-blue-400 bg-blue-50' : ''
       }`}
       style={{ height: ROW_HEIGHT }}
+      onClick={() => selectGroup(group.id)}
       onDoubleClick={startEditing}
       onDragOver={onDragOver}
       onDrop={onDrop}

@@ -6,6 +6,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { ProjectHeader } from './components/ProjectHeader';
 import { ExportImportButtons } from './components/ExportImportButtons';
 import { ZoomToggle } from './components/ZoomToggle';
+import { StatusBar } from './components/StatusBar';
 import { SIDEBAR_WIDTH, TOOLBAR_HEIGHT, MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH } from './constants';
 
 function App() {
@@ -120,6 +121,8 @@ function App() {
           <Timeline scrollRef={scrollRef} sidebarWidth={sidebarWidth} />
         </div>
       </div>
+      {/* Status bar */}
+      <StatusBar />
       {/* Sidebar resize handle */}
       <div
         className="absolute top-0 bottom-0 w-1.5 cursor-col-resize z-50 group"

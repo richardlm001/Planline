@@ -17,6 +17,7 @@ export const MAX_SIDEBAR_WIDTH = 600;
 export const ROW_HEIGHT = 40;
 export const HEADER_HEIGHT = 48;
 export const TOOLBAR_HEIGHT = 37;
+export const STATUS_BAR_HEIGHT = 22;
 export const BASE_VISIBLE_DAYS = 90;
 
 /** Compute the number of visible days needed to fill the viewport at a given zoom level */

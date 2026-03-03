@@ -23,6 +23,7 @@ beforeEach(() => {
     cycleTaskIds: [],
     selectedTaskIds: ['a'],
     selectionAnchorId: 'a',
+    selectedGroupId: null,
     editingTaskId: null,
     linkingFromTaskId: null,
     lastSavedAt: null,
@@ -102,5 +103,94 @@ describe('useKeyboardShortcuts', () => {
     // Should have 1 dependency from 'a' to the new task
     expect(state.dependencies.length).toBe(1);
     expect(state.dependencies[0].fromTaskId).toBe('a');
+  });
+
+  describe('group navigation', () => {
+    beforeEach(() => {
+      // Setup: ungrouped task 'a', then group 'g1' with tasks 'b' and 'c'
+      useProjectStore.setState({
+        tasks: [
+          { id: 'a', name: 'Ungrouped', startDayIndex: 0, durationDays: 1, color: 'sky', sortOrder: 0 },
+          { id: 'b', name: 'Grouped B', startDayIndex: 1, durationDays: 1, color: 'sky', sortOrder: 1, groupId: 'g1' },
+          { id: 'c', name: 'Grouped C', startDayIndex: 2, durationDays: 1, color: 'sky', sortOrder: 2, groupId: 'g1' },
+        ],
+        groups: [
+          { id: 'g1', name: 'Group 1', sortOrder: 0.5, collapsed: false },
+        ],
+        selectedTaskIds: ['a'],
+        selectionAnchorId: 'a',
+        selectedGroupId: null,
+      });
+    });
+
+    it('ArrowDown from ungrouped task selects group header', () => {
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('ArrowDown'));
+      const state = useProjectStore.getState();
+      expect(state.selectedGroupId).toBe('g1');
+      expect(state.selectedTaskIds).toEqual([]);
+    });
+
+    it('ArrowDown from group header selects first child task', () => {
+      useProjectStore.setState({ selectedTaskIds: [], selectedGroupId: 'g1' });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('ArrowDown'));
+      const state = useProjectStore.getState();
+      expect(state.selectedTaskIds).toEqual(['b']);
+      expect(state.selectedGroupId).toBeNull();
+    });
+
+    it('ArrowUp from first child selects group header', () => {
+      useProjectStore.setState({ selectedTaskIds: ['b'], selectionAnchorId: 'b', selectedGroupId: null });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('ArrowUp'));
+      const state = useProjectStore.getState();
+      expect(state.selectedGroupId).toBe('g1');
+      expect(state.selectedTaskIds).toEqual([]);
+    });
+
+    it('ArrowDown skips collapsed group children', () => {
+      useProjectStore.setState({
+        groups: [{ id: 'g1', name: 'Group 1', sortOrder: 0.5, collapsed: true }],
+        selectedTaskIds: ['a'],
+        selectionAnchorId: 'a',
+        selectedGroupId: null,
+      });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('ArrowDown'));
+      const state = useProjectStore.getState();
+      // Should land on the group header (only visible item after 'a')
+      expect(state.selectedGroupId).toBe('g1');
+      expect(state.selectedTaskIds).toEqual([]);
+      // Arrow down again should stay on group (no more items)
+      act(() => fireKey('ArrowDown'));
+      const state2 = useProjectStore.getState();
+      expect(state2.selectedGroupId).toBe('g1');
+    });
+
+    it('ArrowDown with nothing selected picks first item', () => {
+      useProjectStore.setState({ selectedTaskIds: [], selectedGroupId: null });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('ArrowDown'));
+      const state = useProjectStore.getState();
+      expect(state.selectedTaskIds).toEqual(['a']);
+    });
+
+    it('ArrowUp with nothing selected picks last item', () => {
+      useProjectStore.setState({ selectedTaskIds: [], selectedGroupId: null });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('ArrowUp'));
+      const state = useProjectStore.getState();
+      expect(state.selectedTaskIds).toEqual(['c']);
+    });
+
+    it('Escape clears group selection', () => {
+      useProjectStore.setState({ selectedTaskIds: [], selectedGroupId: 'g1' });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('Escape'));
+      const state = useProjectStore.getState();
+      expect(state.selectedGroupId).toBeNull();
+      expect(state.selectedTaskIds).toEqual([]);
+    });
   });
 });
