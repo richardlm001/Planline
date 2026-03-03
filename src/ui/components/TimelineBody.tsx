@@ -3,6 +3,7 @@ import { useProjectStore } from '../../store/useProjectStore';
 import { TaskBar } from './TaskBar';
 import { DependencyArrows } from './DependencyArrows';
 import { ROW_HEIGHT } from '../constants';
+import { buildVisualRowMap } from './layoutUtils';
 
 interface TimelineBodyProps {
   columnWidth: number;
@@ -22,36 +23,39 @@ export function TimelineBody({ columnWidth, rangeStartDayIndex, pixelsPerDay, da
     () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
     [groups]
   );
-  const sortedTasks = useMemo(
-    () => [...tasks]
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .filter((t) => !t.groupId || !collapsedGroupIds.has(t.groupId)),
-    [tasks, collapsedGroupIds]
+
+  const { visibleTasks, taskRowIndex, totalVisualRows, rowItems } = useMemo(
+    () => buildVisualRowMap(tasks, groups, collapsedGroupIds),
+    [tasks, groups, collapsedGroupIds]
   );
 
   const handleVerticalDrop = useCallback((taskId: string, targetRowIndex: number) => {
-    // Determine which tasks to move
     const movingIds = selectedTaskIds.includes(taskId) ? selectedTaskIds : [taskId];
 
-    // Determine the target task's group from the target row position
-    const targetTask = sortedTasks[targetRowIndex];
-    const targetGroupId = targetTask?.groupId;
+    const item = rowItems[targetRowIndex];
+    if (!item) return;
 
-    // Compute insertion index in the full sorted task list
-    // We need to map the visible row index back to the full sorted list index
     const allSorted = [...tasks].sort((a, b) => a.sortOrder - b.sortOrder);
     const remaining = allSorted.filter((t) => !movingIds.includes(t.id));
-    const targetIdx = targetTask
-      ? remaining.findIndex((t) => t.id === targetTask.id)
-      : remaining.length;
 
-    moveTasksToPosition(movingIds, Math.max(0, targetIdx), targetGroupId);
-  }, [selectedTaskIds, sortedTasks, tasks, moveTasksToPosition]);
+    if (item.type === 'group-header') {
+      const groupChildren = remaining.filter((t) => t.groupId === item.group.id);
+      const lastChild = groupChildren[groupChildren.length - 1];
+      const targetIdx = lastChild
+        ? remaining.indexOf(lastChild) + 1
+        : remaining.length;
+      moveTasksToPosition(movingIds, targetIdx, item.group.id);
+    } else {
+      const targetGroupId = item.task.groupId;
+      const targetIdx = remaining.findIndex((t) => t.id === item.task.id);
+      moveTasksToPosition(movingIds, Math.max(0, targetIdx), targetGroupId);
+    }
+  }, [selectedTaskIds, rowItems, tasks, moveTasksToPosition]);
 
   return (
-    <div className="relative" style={{ minHeight: sortedTasks.length * ROW_HEIGHT }}>
+    <div className="relative" style={{ minHeight: totalVisualRows * ROW_HEIGHT }}>
       {/* Row lines */}
-      {sortedTasks.map((_, i) => (
+      {Array.from({ length: totalVisualRows }, (_, i) => (
         <div
           key={i}
           className="absolute w-full border-b border-gray-50"
@@ -68,19 +72,20 @@ export function TimelineBody({ columnWidth, rangeStartDayIndex, pixelsPerDay, da
       />
 
       {/* Task bars */}
-      {sortedTasks.map((task, i) => {
+      {visibleTasks.map((task) => {
         const start = computedStarts.get(task.id) ?? task.startDayIndex;
+        const rowIdx = taskRowIndex.get(task.id) ?? 0;
         return (
           <TaskBar
             key={task.id}
             task={task}
             computedStart={start}
             columnWidth={columnWidth}
-            rowIndex={i}
+            rowIndex={rowIdx}
             rangeStartDayIndex={rangeStartDayIndex}
             pixelsPerDay={pixelsPerDay}
             dayToPixel={dayToPixel}
-            totalRows={sortedTasks.length}
+            totalRows={totalVisualRows}
             onVerticalDrop={handleVerticalDrop}
           />
         );

@@ -2,6 +2,7 @@ import { useMemo, useId } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { ROW_HEIGHT } from '../constants';
 import { BAR_HEIGHT } from './TaskBar';
+import { buildVisualRowMap } from './layoutUtils';
 
 interface DependencyArrowsProps {
   columnWidth: number;
@@ -23,75 +24,17 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
     [groups]
   );
 
-  // Build visible row list: ungrouped tasks + group headers + expanded group children
-  // This matches the sidebar/TimelineBody ordering
-  const sortedTasks = useMemo(
-    () => [...tasks].sort((a, b) => a.sortOrder - b.sortOrder),
-    [tasks]
+  // Build visual row mapping that matches sidebar ordering
+  // (ungrouped tasks first, then groups with headers + children)
+  const { taskRowIndex: taskIndexMap, groupHeaderRowIndex, totalVisualRows } = useMemo(
+    () => buildVisualRowMap(tasks, groups, collapsedGroupIds),
+    [tasks, groups, collapsedGroupIds]
   );
-
-  // Visible tasks (used by TimelineBody for rendering bars)
-  const visibleTasks = useMemo(
-    () => sortedTasks.filter((t) => !t.groupId || !collapsedGroupIds.has(t.groupId)),
-    [sortedTasks, collapsedGroupIds]
-  );
-
-  const taskIndexMap = useMemo(() => {
-    const map = new Map<string, number>();
-    visibleTasks.forEach((t, i) => map.set(t.id, i));
-    return map;
-  }, [visibleTasks]);
 
   const taskMap = useMemo(
     () => new Map(tasks.map((t) => [t.id, t])),
     [tasks]
   );
-
-  // Map from groupId to the row index of the group header in the sidebar.
-  // In the sidebar, the order is: ungrouped tasks, then groups (each with header + children).
-  // But TimelineBody only shows tasks (no group headers), so collapsed group arrows
-  // should point to the first visible task before/after the group, or approximate.
-  // Actually, looking at TimelineBody — it only renders task bars, not group headers.
-  // So for collapsed groups, we need to find a reasonable row position.
-  // The best approach: find the row index where the group's tasks would have been
-  // — which is the index of the first task after the collapsed group's tasks in sortOrder.
-
-  // For collapsed groups, compute a "virtual row index" based on where their tasks
-  // would appear in the visible task list — the index of the next visible task after them.
-  const collapsedGroupRowIndex = useMemo(() => {
-    const map = new Map<string, number>();
-    if (collapsedGroupIds.size === 0) return map;
-
-    for (const groupId of collapsedGroupIds) {
-      // Find the sort orders of tasks in this group
-      const groupTasks = sortedTasks.filter((t) => t.groupId === groupId);
-      if (groupTasks.length === 0) continue;
-
-      const maxSortOrder = Math.max(...groupTasks.map((t) => t.sortOrder));
-      const minSortOrder = Math.min(...groupTasks.map((t) => t.sortOrder));
-
-      // Find the visible task that comes just after or just before this group's tasks
-      let bestIndex = visibleTasks.length; // default: bottom
-      for (let i = 0; i < visibleTasks.length; i++) {
-        if (visibleTasks[i].sortOrder > maxSortOrder) {
-          bestIndex = i;
-          break;
-        }
-      }
-      // If nothing after, try finding nearest before
-      if (bestIndex === visibleTasks.length && visibleTasks.length > 0) {
-        for (let i = visibleTasks.length - 1; i >= 0; i--) {
-          if (visibleTasks[i].sortOrder < minSortOrder) {
-            bestIndex = i + 1;
-            break;
-          }
-        }
-      }
-      // Clamp to be within the grid area (use -0.5 offset to indicate "between rows")
-      map.set(groupId, Math.max(0, bestIndex - 0.5));
-    }
-    return map;
-  }, [collapsedGroupIds, sortedTasks, visibleTasks]);
 
   const barVerticalPadding = (ROW_HEIGHT - BAR_HEIGHT) / 2;
   const barCenterY = (rowIndex: number) =>
@@ -160,7 +103,7 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
       const row = taskIndexMap.get(taskId);
       if (row !== undefined) return row;
       if (task.groupId && collapsedGroupIds.has(task.groupId)) {
-        return collapsedGroupRowIndex.get(task.groupId) ?? 0;
+        return groupHeaderRowIndex.get(task.groupId) ?? 0;
       }
       return undefined;
     };
@@ -195,7 +138,7 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
   });
 
   // Get total height
-  const totalHeight = Math.max(visibleTasks.length * ROW_HEIGHT, 200);
+  const totalHeight = Math.max(totalVisualRows * ROW_HEIGHT, 200);
 
   return (
     <svg
