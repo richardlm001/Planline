@@ -56,7 +56,7 @@ describe('DependencyArrows', () => {
     expect(paths[0].getAttribute('stroke-dasharray')).toBeNull();
   });
 
-  it('renders a dashed arrow when from-task is in a collapsed group', () => {
+  it('hides arrow when from-task is in a collapsed group', () => {
     useProjectStore.setState({
       tasks: [
         { id: 't1', name: 'A', startDayIndex: 0, durationDays: 3, color: '#3B82F6', sortOrder: 0, groupId: 'g1' },
@@ -69,12 +69,10 @@ describe('DependencyArrows', () => {
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
     const paths = getVisiblePaths(container);
-    expect(paths.length).toBe(1);
-    // Collapsed arrow should have dashed style
-    expect(paths[0].getAttribute('stroke-dasharray')).toBe('4 3');
+    expect(paths.length).toBe(0);
   });
 
-  it('renders a dashed arrow when to-task is in a collapsed group', () => {
+  it('hides arrow when to-task is in a collapsed group', () => {
     useProjectStore.setState({
       tasks: [
         { id: 't1', name: 'A', startDayIndex: 0, durationDays: 3, color: '#3B82F6', sortOrder: 0 },
@@ -87,8 +85,7 @@ describe('DependencyArrows', () => {
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
     const paths = getVisiblePaths(container);
-    expect(paths.length).toBe(1);
-    expect(paths[0].getAttribute('stroke-dasharray')).toBe('4 3');
+    expect(paths.length).toBe(0);
   });
 
   it('renders solid arrow when group is expanded', () => {
@@ -121,9 +118,7 @@ describe('DependencyArrows', () => {
 
     const { container } = render(<DependencyArrows {...defaultProps} />);
     const paths = getVisiblePaths(container);
-    // Both tasks collapsed to same group position — arrow still renders (dashed)
-    expect(paths.length).toBe(1);
-    expect(paths[0].getAttribute('stroke-dasharray')).toBe('4 3');
+    expect(paths.length).toBe(0);
   });
 
   it('renders no arrows when no dependencies exist', () => {
