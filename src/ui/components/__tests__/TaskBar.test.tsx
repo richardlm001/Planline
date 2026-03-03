@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import 'fake-indexeddb/auto';
-import { TaskBar } from '../TaskBar';
+import { TaskBar, snapToHalfDay } from '../TaskBar';
 import { useProjectStore } from '../../../store/useProjectStore';
 
 beforeEach(() => {
@@ -119,5 +119,116 @@ describe('TaskBar', () => {
     const bar = getByTestId('task-bar-t1');
     fireEvent.click(bar);
     expect(parentClickSpy.called).toBe(false);
+  });
+});
+
+describe('snapToHalfDay', () => {
+  it('snaps to nearest whole day when closer to integer', () => {
+    expect(snapToHalfDay(2.1)).toBe(2);
+    expect(snapToHalfDay(2.9)).toBe(3);
+    expect(snapToHalfDay(-1.2)).toBe(-1);
+  });
+
+  it('snaps to nearest half day when closer to .5', () => {
+    expect(snapToHalfDay(2.3)).toBe(2.5);
+    expect(snapToHalfDay(2.7)).toBe(2.5);
+    expect(snapToHalfDay(0.6)).toBe(0.5);
+  });
+
+  it('returns exact value for already-snapped values', () => {
+    expect(snapToHalfDay(0)).toBe(0);
+    expect(snapToHalfDay(0.5)).toBe(0.5);
+    expect(snapToHalfDay(1)).toBe(1);
+    expect(snapToHalfDay(3.5)).toBe(3.5);
+  });
+
+  it('handles the 0.25 boundary (rounds to 0.5)', () => {
+    // Math.round(0.25 * 2) / 2 = Math.round(0.5) / 2 = 1 / 2 = 0.5
+    expect(snapToHalfDay(0.25)).toBe(0.5);
+  });
+
+  it('handles negative half-day values', () => {
+    expect(snapToHalfDay(-0.5)).toBe(-0.5);
+    expect(snapToHalfDay(-1.3)).toBe(-1.5);
+    expect(snapToHalfDay(-2.7)).toBe(-2.5);
+  });
+});
+
+describe('TaskBar half-day drag/resize', () => {
+  it('moves task by half a day on drag', () => {
+    useProjectStore.setState({ tasks: [defaultTask] });
+    const { getByTestId } = render(<TaskBar {...defaultProps} />);
+    const bar = getByTestId('task-bar-t1');
+
+    bar.setPointerCapture = () => {};
+    bar.releasePointerCapture = () => {};
+
+    // pixelsPerDay is 40, so half a day = 20px
+    fireEvent.pointerDown(bar, { clientX: 100, clientY: 50, pointerId: 1 });
+    // Move past direction threshold then half a day (20px)
+    fireEvent.pointerMove(bar, { clientX: 120, clientY: 50, pointerId: 1 });
+    fireEvent.pointerUp(bar, { clientX: 120, clientY: 50, pointerId: 1 });
+
+    const updated = useProjectStore.getState().tasks.find((t) => t.id === 't1');
+    expect(updated?.startDayIndex).toBe(5.5); // computedStart(5) + 0.5
+  });
+
+  it('resizes right edge by half a day', () => {
+    useProjectStore.setState({ tasks: [defaultTask] });
+    const { container } = render(<TaskBar {...defaultProps} />);
+    // The right resize handle is the second [data-resize-handle]
+    const handles = container.querySelectorAll('[data-resize-handle]');
+    const rightHandle = handles[1] as HTMLElement;
+
+    rightHandle.setPointerCapture = () => {};
+    rightHandle.releasePointerCapture = () => {};
+
+    // pixelsPerDay = 40, half day = 20px
+    fireEvent.pointerDown(rightHandle, { clientX: 200, pointerId: 1 });
+    fireEvent.pointerMove(rightHandle, { clientX: 220, pointerId: 1 });
+    fireEvent.pointerUp(rightHandle, { clientX: 220, pointerId: 1 });
+
+    const updated = useProjectStore.getState().tasks.find((t) => t.id === 't1');
+    expect(updated?.durationDays).toBe(3.5); // 3 + 0.5
+  });
+
+  it('resizes left edge by half a day', () => {
+    useProjectStore.setState({ tasks: [defaultTask] });
+    const { container } = render(<TaskBar {...defaultProps} />);
+    const handles = container.querySelectorAll('[data-resize-handle]');
+    const leftHandle = handles[0] as HTMLElement;
+
+    leftHandle.setPointerCapture = () => {};
+    leftHandle.releasePointerCapture = () => {};
+
+    // Drag left by half day (20px to the left = -20)
+    fireEvent.pointerDown(leftHandle, { clientX: 200, pointerId: 1 });
+    fireEvent.pointerMove(leftHandle, { clientX: 180, pointerId: 1 });
+    fireEvent.pointerUp(leftHandle, { clientX: 180, pointerId: 1 });
+
+    const updated = useProjectStore.getState().tasks.find((t) => t.id === 't1');
+    expect(updated?.durationDays).toBe(3.5); // 3 + 0.5 (left edge moved left)
+    expect(updated?.startDayIndex).toBe(-0.5); // startDayIndex(0) - 0.5
+  });
+
+  it('enforces minimum duration of 0.5 days on resize', () => {
+    const shortTask = { ...defaultTask, durationDays: 1 };
+    useProjectStore.setState({ tasks: [shortTask] });
+    const { container } = render(
+      <TaskBar {...defaultProps} task={shortTask} />
+    );
+    const handles = container.querySelectorAll('[data-resize-handle]');
+    const rightHandle = handles[1] as HTMLElement;
+
+    rightHandle.setPointerCapture = () => {};
+    rightHandle.releasePointerCapture = () => {};
+
+    // Shrink by 2 days worth (80px to the left) — should clamp to 0.5
+    fireEvent.pointerDown(rightHandle, { clientX: 200, pointerId: 1 });
+    fireEvent.pointerMove(rightHandle, { clientX: 120, pointerId: 1 });
+    fireEvent.pointerUp(rightHandle, { clientX: 120, pointerId: 1 });
+
+    const updated = useProjectStore.getState().tasks.find((t) => t.id === 't1');
+    expect(updated?.durationDays).toBe(0.5);
   });
 });

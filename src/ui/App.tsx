@@ -13,6 +13,8 @@ function App() {
   const dismissError = useProjectStore((s) => s.dismissError);
   const setLinkingFromTaskId = useProjectStore((s) => s.setLinkingFromTaskId);
   const hasHydrated = useRef(false);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
 
   useKeyboardShortcuts();
 
@@ -34,6 +36,37 @@ function App() {
       window.removeEventListener('pointerup', handleGlobalPointerUp);
     };
   }, [handleGlobalPointerUp]);
+
+  // Sync vertical scroll between sidebar task list and timeline
+  useEffect(() => {
+    const sidebar = sidebarScrollRef.current;
+    const timeline = timelineScrollRef.current;
+    if (!sidebar || !timeline) return;
+
+    let ticking = false;
+
+    const handleSidebarScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      timeline.scrollTop = sidebar.scrollTop;
+      requestAnimationFrame(() => { ticking = false; });
+    };
+
+    const handleTimelineScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      sidebar.scrollTop = timeline.scrollTop;
+      requestAnimationFrame(() => { ticking = false; });
+    };
+
+    sidebar.addEventListener('scroll', handleSidebarScroll);
+    timeline.addEventListener('scroll', handleTimelineScroll);
+
+    return () => {
+      sidebar.removeEventListener('scroll', handleSidebarScroll);
+      timeline.removeEventListener('scroll', handleTimelineScroll);
+    };
+  }, [isLoaded]);
 
   if (!isLoaded) {
     return (
@@ -77,10 +110,10 @@ function App() {
         className="flex-shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col"
         style={{ width: SIDEBAR_WIDTH }}
       >
-        <Sidebar />
+        <Sidebar scrollRef={sidebarScrollRef} />
       </div>
       <div className="flex-1 overflow-hidden">
-        <Timeline />
+        <Timeline scrollRef={timelineScrollRef} />
       </div>
     </div>
   );

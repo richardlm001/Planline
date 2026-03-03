@@ -19,6 +19,12 @@ export const BAR_HEIGHT = 28;
 const BAR_VERTICAL_PADDING = (ROW_HEIGHT - BAR_HEIGHT) / 2;
 const RESIZE_HANDLE_WIDTH = 8;
 const DRAG_DIRECTION_THRESHOLD = 5; // pixels before deciding direction
+const MIN_DURATION = 0.5;
+
+/** Snap a fractional day value to the nearest half-day (0, 0.5, 1, 1.5, …) */
+export function snapToHalfDay(value: number): number {
+  return Math.round(value * 2) / 2;
+}
 
 export const TaskBar = memo(function TaskBar({
   task,
@@ -49,17 +55,17 @@ export const TaskBar = memo(function TaskBar({
   const originalStart = useRef(computedStart);
   const dragDirectionDecided = useRef(false);
 
-  const effectiveStart = computedStart + (isDragging && !isVerticalDrag ? Math.round(dragOffset / pixelsPerDay) : 0);
+  const effectiveStart = computedStart + (isDragging && !isVerticalDrag ? snapToHalfDay(dragOffset / pixelsPerDay) : 0);
 
   // Compute display values accounting for resize
   let displayStart = effectiveStart;
   let displayDuration = task.durationDays;
 
   if (resizeEdge === 'right') {
-    displayDuration = Math.max(1, task.durationDays + Math.round(resizeDelta / pixelsPerDay));
+    displayDuration = Math.max(MIN_DURATION, task.durationDays + snapToHalfDay(resizeDelta / pixelsPerDay));
   } else if (resizeEdge === 'left') {
-    const daysDelta = Math.round(resizeDelta / pixelsPerDay);
-    const newDuration = Math.max(1, task.durationDays - daysDelta);
+    const daysDelta = snapToHalfDay(resizeDelta / pixelsPerDay);
+    const newDuration = Math.max(MIN_DURATION, task.durationDays - daysDelta);
     const actualDelta = task.durationDays - newDuration;
     displayStart = computedStart + actualDelta;
     displayDuration = newDuration;
@@ -123,7 +129,7 @@ export const TaskBar = memo(function TaskBar({
       if (isVerticalDrag && verticalDragRow !== null && verticalDragRow !== rowIndex) {
         onVerticalDrop?.(task.id, verticalDragRow);
       } else if (!isVerticalDrag) {
-        const daysDelta = Math.round((e.clientX - dragStartX.current) / pixelsPerDay);
+        const daysDelta = snapToHalfDay((e.clientX - dragStartX.current) / pixelsPerDay);
         if (daysDelta !== 0) {
           const newStart = computedStart + daysDelta;
           updateTask(task.id, { startDayIndex: newStart });
@@ -158,15 +164,15 @@ export const TaskBar = memo(function TaskBar({
   const handleResizePointerUp = useCallback((e: React.PointerEvent) => {
     if (resizeEdge) {
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      const daysDelta = Math.round((e.clientX - dragStartX.current) / pixelsPerDay);
+      const daysDelta = snapToHalfDay((e.clientX - dragStartX.current) / pixelsPerDay);
 
       if (resizeEdge === 'right') {
-        const newDuration = Math.max(1, task.durationDays + daysDelta);
+        const newDuration = Math.max(MIN_DURATION, task.durationDays + daysDelta);
         if (newDuration !== task.durationDays) {
           updateTask(task.id, { durationDays: newDuration });
         }
       } else if (resizeEdge === 'left') {
-        const newDuration = Math.max(1, task.durationDays - daysDelta);
+        const newDuration = Math.max(MIN_DURATION, task.durationDays - daysDelta);
         const actualDelta = task.durationDays - newDuration;
         const newStart = task.startDayIndex + actualDelta;
         if (newDuration !== task.durationDays || newStart !== task.startDayIndex) {
@@ -197,7 +203,7 @@ export const TaskBar = memo(function TaskBar({
 
   return (
     <div
-      className={`absolute rounded-md shadow-sm border flex items-center text-xs text-gray-700 font-medium select-none group ${
+      className={`absolute rounded-full shadow-sm border flex items-center text-xs text-gray-700 font-medium select-none group ${
         isDragging ? 'cursor-grabbing opacity-80' : 'cursor-grab'
       } ${isSelected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-black/10'}`}
       style={{

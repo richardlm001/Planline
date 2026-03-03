@@ -8,7 +8,11 @@ import { ExportImportButtons } from './ExportImportButtons';
 import { SavedIndicator } from './SavedIndicator';
 import { DebugButton } from './debug/DebugButton';
 
-export function Sidebar() {
+interface SidebarProps {
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
+}
+
+export function Sidebar({ scrollRef }: SidebarProps) {
   const tasks = useProjectStore((s) => s.tasks);
   const groups = useProjectStore((s) => s.groups);
   const selectedTaskIds = useProjectStore((s) => s.selectedTaskIds);
@@ -166,7 +170,7 @@ export function Sidebar() {
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto" onDragOver={handleListDragOver} onDrop={handleListDrop}>
+      <div ref={scrollRef} data-testid="sidebar-scroll" className="flex-1 overflow-y-auto" onDragOver={handleListDragOver} onDrop={handleListDrop}>
         {/* Ungrouped tasks first */}
         {ungroupedTasks.map((task) => (
           <SidebarTaskRow

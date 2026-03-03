@@ -41,8 +41,13 @@ export interface TimelineColumn {
   daysSpan: number; // how many calendar days this column represents
 }
 
-export function Timeline() {
-  const scrollRef = useRef<HTMLDivElement>(null);
+interface TimelineProps {
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
+}
+
+export function Timeline({ scrollRef: scrollRefProp }: TimelineProps) {
+  const internalRef = useRef<HTMLDivElement>(null);
+  const scrollRef = scrollRefProp ?? internalRef;
   const zoomLevel = useProjectStore((s) => s.zoomLevel);
   const clearSelection = useProjectStore((s) => s.clearSelection);
   const zoomConfig = ZOOM_CONFIGS[zoomLevel];
@@ -194,7 +199,7 @@ export function Timeline() {
       <div className="flex items-center justify-end px-3 py-1.5 border-b border-gray-200 bg-white flex-shrink-0">
         <ZoomToggle />
       </div>
-      <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto">
+      <div ref={scrollRef} data-testid="timeline-scroll" className="flex-1 overflow-x-auto overflow-y-auto">
         <div style={{ width: totalWidth, minHeight: '100%' }} className="relative">
           <TimelineHeader columns={columns} columnWidth={columnWidth} />
           <div className="relative" style={{ marginTop: 0 }} onClick={handleCanvasClick}>
