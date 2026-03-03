@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { buildExportData, validateImportData, importProject } from '../../db/export';
+import { DebugModal } from './debug/DebugModal';
 import { format } from 'date-fns';
 
 export function ExportImportButtons() {
@@ -13,6 +14,7 @@ export function ExportImportButtons() {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   // Close menu on outside click
   useEffect(() => {
@@ -111,6 +113,15 @@ export function ExportImportButtons() {
           >
             Import
           </button>
+          {import.meta.env.DEV && (
+            <button
+              onClick={() => { setDebugOpen(true); setIsOpen(false); }}
+              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              data-testid="debug-open-btn"
+            >
+              Debug
+            </button>
+          )}
         </div>
       )}
       <input
@@ -121,6 +132,7 @@ export function ExportImportButtons() {
         onChange={handleImport}
         data-testid="import-file-input"
       />
+      {debugOpen && <DebugModal onClose={() => setDebugOpen(false)} />}
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
-import { HEADER_HEIGHT } from '../constants';
+import { HEADER_HEIGHT, TOOLBAR_HEIGHT } from '../constants';
 import { useProjectStore } from '../../store/useProjectStore';
 import { SidebarTaskRow } from './SidebarTaskRow';
 import { SidebarGroupRow } from './SidebarGroupRow';
 import { SavedIndicator } from './SavedIndicator';
-import { DebugButton } from './debug/DebugButton';
+
 
 interface SidebarProps {
   width: number;
@@ -139,15 +139,15 @@ export function Sidebar({ width }: SidebarProps) {
 
   return (
     <div
-      className="sticky left-0 z-30 bg-gray-50 border-r border-gray-200 flex-shrink-0"
-      style={{ width }}
+      className="sticky left-0 z-30 bg-gray-50 border-r border-gray-200 flex-shrink-0 flex flex-col"
+      style={{ width, height: `calc(100vh - ${TOOLBAR_HEIGHT}px)` }}
       onDragEnd={handleDragEnd}
       onDragOver={handleListDragOver}
       onDrop={handleListDrop}
     >
       {/* Sticky Tasks header (corner pin: sticky top + left) */}
       <div
-        className="sticky top-0 z-40 bg-gray-50 flex items-center justify-between px-3 font-semibold text-xs text-gray-500 border-b border-gray-200"
+        className="z-40 bg-gray-50 flex items-center justify-between px-3 font-semibold text-xs text-gray-500 border-b border-gray-200 flex-shrink-0"
         style={{ height: HEADER_HEIGHT }}
       >
           <span>Tasks</span>
@@ -170,6 +170,9 @@ export function Sidebar({ width }: SidebarProps) {
             </button>
           </div>
         </div>
+
+        {/* Scrollable task list */}
+        <div className="flex-1 overflow-y-auto min-h-0">
         {/* Ungrouped tasks first */}
         {ungroupedTasks.map((task) => (
           <SidebarTaskRow
@@ -209,8 +212,12 @@ export function Sidebar({ width }: SidebarProps) {
             </div>
           );
         })}
-        <SavedIndicator />
-        <DebugButton />
+        </div>
+
+        {/* Fixed bottom section */}
+        <div className="flex-shrink-0 border-t border-gray-200 bg-gray-50">
+          <SavedIndicator />
+        </div>
     </div>
   );
 }
