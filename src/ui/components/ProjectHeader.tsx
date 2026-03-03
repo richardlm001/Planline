@@ -45,11 +45,11 @@ export function ProjectHeader() {
   };
 
   return (
-    <div className="flex items-center" data-testid="project-header">
+    <div className="flex items-center min-w-0 flex-1" data-testid="project-header">
       {isEditing ? (
         <input
           ref={inputRef}
-          className="bg-white border border-blue-300 rounded px-1.5 py-0.5 text-sm font-semibold text-gray-800 outline-none"
+          className="w-full bg-white border border-blue-300 rounded px-1.5 py-0.5 text-sm font-semibold text-gray-800 outline-none"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={saveEdit}
@@ -58,8 +58,9 @@ export function ProjectHeader() {
         />
       ) : (
         <span
-          className="text-sm font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors"
+          className="text-sm font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors truncate"
           onClick={startEditing}
+          title={project.name}
           data-testid="project-name"
         >
           {project.name}

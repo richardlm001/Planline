@@ -55,7 +55,7 @@ export function ExportImportButtons() {
   }, [hydrate]);
 
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1 flex-shrink-0">
       <button
         onClick={handleExport}
         className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
