@@ -4,9 +4,33 @@ import type { Task, Dependency, Group, Project } from '../domain/types';
 import { propagate } from '../domain/scheduler';
 import type { ScheduleResult } from '../domain/scheduler';
 import { DEFAULTS, COLOR_PALETTE, todayDayIndex } from '../domain/constants';
-import { ZOOM_PRESETS, DEFAULT_ZOOM_PRESET_INDEX } from '../ui/constants';
+import { ZOOM_PRESETS, DEFAULT_ZOOM_PRESET_INDEX, MAX_ZOOM_PRESET_INDEX } from '../ui/constants';
 import type { ZoomLevel } from '../ui/constants';
 import * as repo from '../db/repository';
+
+const ZOOM_STORAGE_KEY = 'planline:zoomPresetIndex';
+
+function loadZoomPresetIndex(): number {
+  try {
+    const raw = localStorage.getItem(ZOOM_STORAGE_KEY);
+    if (raw === null) return DEFAULT_ZOOM_PRESET_INDEX;
+    const parsed = Number(raw);
+    if (Number.isNaN(parsed) || parsed < 0 || parsed > MAX_ZOOM_PRESET_INDEX) {
+      return DEFAULT_ZOOM_PRESET_INDEX;
+    }
+    return parsed;
+  } catch {
+    return DEFAULT_ZOOM_PRESET_INDEX;
+  }
+}
+
+function saveZoomPresetIndex(index: number): void {
+  try {
+    localStorage.setItem(ZOOM_STORAGE_KEY, String(index));
+  } catch {
+    // localStorage may be unavailable — silently ignore
+  }
+}
 
 interface ProjectState {
   // Data
@@ -113,9 +137,13 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     try {
       const data = await repo.loadAll();
       const schedule = runScheduler(data.tasks, data.dependencies);
+      const savedPresetIndex = loadZoomPresetIndex();
+      const preset = ZOOM_PRESETS[savedPresetIndex];
       set({
         ...data,
         ...schedule,
+        zoomPresetIndex: savedPresetIndex,
+        zoomLevel: preset.viewMode,
         isLoaded: true,
         hydrationError: null,
       });
@@ -506,12 +534,14 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     const idx = ZOOM_PRESETS.findIndex(p => p.viewMode === level);
     const presetIndex = idx >= 0 ? idx : DEFAULT_ZOOM_PRESET_INDEX;
     set({ zoomLevel: level, zoomPresetIndex: presetIndex });
+    saveZoomPresetIndex(presetIndex);
   },
 
   setZoomPresetIndex: (index: number) => {
     const clamped = Math.max(0, Math.min(index, ZOOM_PRESETS.length - 1));
     const preset = ZOOM_PRESETS[clamped];
     set({ zoomPresetIndex: clamped, zoomLevel: preset.viewMode });
+    saveZoomPresetIndex(clamped);
   },
 
   setDragOverride: (taskId: string, start: number, durationDays: number) => {

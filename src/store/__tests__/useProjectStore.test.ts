@@ -6,6 +6,7 @@ import { useProjectStore } from '../useProjectStore';
 beforeEach(async () => {
   const { default: Dexie } = await import('dexie');
   await Dexie.delete('planline');
+  localStorage.clear();
   useProjectStore.setState({
     tasks: [],
     dependencies: [],
@@ -328,6 +329,32 @@ describe('useProjectStore', () => {
 
     useProjectStore.getState().setZoomPresetIndex(999);
     expect(useProjectStore.getState().zoomPresetIndex).toBe(9);
+  });
+
+  it('setZoomPresetIndex persists to localStorage', () => {
+    useProjectStore.getState().setZoomPresetIndex(7);
+    expect(localStorage.getItem('planline:zoomPresetIndex')).toBe('7');
+  });
+
+  it('setZoomLevel persists derived presetIndex to localStorage', () => {
+    useProjectStore.getState().setZoomLevel('month');
+    const stored = Number(localStorage.getItem('planline:zoomPresetIndex'));
+    // Should be the first month preset index (7)
+    expect(stored).toBe(7);
+  });
+
+  it('hydrate restores zoomPresetIndex from localStorage', async () => {
+    localStorage.setItem('planline:zoomPresetIndex', '5');
+    await useProjectStore.getState().hydrate();
+    const state = useProjectStore.getState();
+    expect(state.zoomPresetIndex).toBe(5);
+    expect(state.zoomLevel).toBe('week');
+  });
+
+  it('hydrate falls back to default when localStorage has invalid value', async () => {
+    localStorage.setItem('planline:zoomPresetIndex', 'garbage');
+    await useProjectStore.getState().hydrate();
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(2);
   });
 
   it('setDragOverride publishes live start/duration and clearDragOverride removes it', () => {
