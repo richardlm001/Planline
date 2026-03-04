@@ -160,10 +160,19 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     const maxSortOrder = state.tasks.reduce((max, t) => Math.max(max, t.sortOrder), -1);
     const colorIndex = state.tasks.length % COLOR_PALETTE.length;
 
+    // Use the start day of the last task (by sort order) if one exists, otherwise default to today
+    let defaultStartDayIndex = todayDayIndex();
+    if (state.tasks.length > 0) {
+      const lastTask = state.tasks.reduce((prev, curr) =>
+        curr.sortOrder > prev.sortOrder ? curr : prev
+      );
+      defaultStartDayIndex = state.computedStarts.get(lastTask.id) ?? lastTask.startDayIndex;
+    }
+
     const task: Task = {
       id: nanoid(),
       name: DEFAULTS.taskName,
-      startDayIndex: todayDayIndex(),
+      startDayIndex: defaultStartDayIndex,
       durationDays: DEFAULTS.taskDuration,
       color: COLOR_PALETTE[colorIndex],
       sortOrder: maxSortOrder + 1,

@@ -380,4 +380,33 @@ describe('useProjectStore', () => {
     clearDragOverride('task-2');
     expect(useProjectStore.getState().dragOverrides.size).toBe(0);
   });
+
+  it('addTask defaults to today when no tasks exist', async () => {
+    const task = await useProjectStore.getState().addTask();
+    const { dateToDayIndex } = await import('../../domain/constants');
+    const todayIndex = dateToDayIndex(new Date());
+    expect(task.startDayIndex).toBe(todayIndex);
+  });
+
+  it('addTask inherits startDayIndex from the last task by sort order', async () => {
+    await useProjectStore.getState().addTask({ name: 'First', startDayIndex: 20 });
+    await useProjectStore.getState().addTask({ name: 'Second', startDayIndex: 50 });
+
+    const third = await useProjectStore.getState().addTask({ name: 'Third' });
+    // Should inherit startDayIndex from 'Second' (highest sortOrder)
+    expect(third.startDayIndex).toBe(50);
+  });
+
+  it('addTask uses computedStart of the last task when scheduler adjusts it', async () => {
+    const taskA = await useProjectStore.getState().addTask({ name: 'A', startDayIndex: 0, durationDays: 5 });
+    const taskB = await useProjectStore.getState().addTask({ name: 'B', startDayIndex: 0, durationDays: 3 });
+    // B depends on A → scheduler pushes B to day 4 (A's last day = 0+5-1=4)
+    await useProjectStore.getState().addDependency(taskA.id, taskB.id);
+
+    const taskC = await useProjectStore.getState().addTask({ name: 'C' });
+    // Should inherit B's computed start (4), not its stored start (0)
+    const computedStartB = useProjectStore.getState().computedStarts.get(taskB.id);
+    expect(computedStartB).toBe(4);
+    expect(taskC.startDayIndex).toBe(4);
+  });
 });
