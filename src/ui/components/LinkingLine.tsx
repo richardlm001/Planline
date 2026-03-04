@@ -81,24 +81,54 @@ export function LinkingLine({ dayToPixel, scrollContainer, sidebarWidth = 250 }:
   }, [linkingFromTaskId, handlePointerMove, handlePointerUp]);
 
   /**
-   * Build a rounded-corner Z-shaped path from (sx, sy) to (tx, ty) via a midX elbow.
+   * Build a rounded-corner path from (sx, sy) to (tx, ty).
    * Matches the arrow path style used in DependencyArrows.
    */
   const buildArrowPath = (sx: number, sy: number, tx: number, ty: number): string => {
-    const midX = sx + 12;
-    if (sy === ty) {
+    const ext = 12;
+    const minGap = ext * 2;
+
+    if (sy === ty && tx >= sx + minGap) {
       return `M ${sx} ${sy} L ${tx} ${ty}`;
     }
-    const dy = ty - sy;
-    const absDy = Math.abs(dy);
-    const dirY = dy > 0 ? 1 : -1;
-    const r = Math.min(10, absDy / 2, Math.abs(midX - sx) / 2, Math.abs(tx - midX) / 2);
+
+    if (tx >= sx + minGap) {
+      const midX = sx + ext;
+      const dy = ty - sy;
+      const absDy = Math.abs(dy);
+      const dirY = dy > 0 ? 1 : -1;
+      const r = Math.min(10, absDy / 2, Math.abs(midX - sx) / 2, Math.abs(tx - midX) / 2);
+      return [
+        `M ${sx} ${sy}`,
+        `L ${midX - r} ${sy}`,
+        `Q ${midX} ${sy} ${midX} ${sy + r * dirY}`,
+        `L ${midX} ${ty - r * dirY}`,
+        `Q ${midX} ${ty} ${midX + r} ${ty}`,
+        `L ${tx} ${ty}`,
+      ].join(' ');
+    }
+
+    const rightX = sx + ext;
+    const leftX = tx - ext;
+    const midY = sy === ty ? sy - ROW_HEIGHT * 0.6 : (sy + ty) / 2;
+
+    const dirY1 = midY > sy ? 1 : -1;
+    const dirY2 = ty > midY ? 1 : -1;
+    const absDy1 = Math.abs(midY - sy);
+    const absDy2 = Math.abs(ty - midY);
+    const hSpan = Math.abs(rightX - leftX);
+    const r = Math.min(10, absDy1 / 2, absDy2 / 2, ext / 2, hSpan / 2);
+
     return [
       `M ${sx} ${sy}`,
-      `L ${midX - r} ${sy}`,
-      `Q ${midX} ${sy} ${midX} ${sy + r * dirY}`,
-      `L ${midX} ${ty - r * dirY}`,
-      `Q ${midX} ${ty} ${midX + r} ${ty}`,
+      `L ${rightX - r} ${sy}`,
+      `Q ${rightX} ${sy} ${rightX} ${sy + r * dirY1}`,
+      `L ${rightX} ${midY - r * dirY1}`,
+      `Q ${rightX} ${midY} ${rightX - r} ${midY}`,
+      `L ${leftX + r} ${midY}`,
+      `Q ${leftX} ${midY} ${leftX} ${midY + r * dirY2}`,
+      `L ${leftX} ${ty - r * dirY2}`,
+      `Q ${leftX} ${ty} ${leftX + r} ${ty}`,
       `L ${tx} ${ty}`,
     ].join(' ');
   };

@@ -221,6 +221,31 @@ describe('DependencyArrows', () => {
     expect(useProjectStore.getState().selectedDependencyId).toBe('d1');
   });
 
+  it('routes S-shaped path when destination starts near or behind source end', () => {
+    // t1 ends at day 5, t2 starts at day 4 — destination is BEHIND source end
+    useProjectStore.setState({
+      tasks: [
+        { id: 't1', name: 'A', startDayIndex: 0, durationDays: 5, color: '#3B82F6', sortOrder: 0 },
+        { id: 't2', name: 'B', startDayIndex: 4, durationDays: 2, color: '#10B981', sortOrder: 1 },
+      ],
+      dependencies: [{ id: 'd1', fromTaskId: 't1', toTaskId: 't2' }],
+      computedStarts: new Map([['t1', 0], ['t2', 4]]),
+      dragOverrides: new Map(),
+    });
+
+    const { container } = render(<DependencyArrows {...defaultProps} />);
+    const paths = getVisiblePaths(container);
+    expect(paths.length).toBe(1);
+    const d = paths[0].getAttribute('d')!;
+    // sx = dayToPixel(0+5) = 200, tx = dayToPixel(4) = 160
+    // S-path should end at destination (160, 60) going rightward
+    expect(d).toMatch(/L 160 60$/);
+    // Path should go right from source to sx+12 = 212
+    expect(d).toContain('212');
+    // Path should approach destination from left via tx-12 = 148
+    expect(d).toContain('148');
+  });
+
   it('renders selected dependency with full opacity and highlight color', () => {
     useProjectStore.setState({
       tasks: [

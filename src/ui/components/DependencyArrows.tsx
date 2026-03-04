@@ -60,26 +60,60 @@ export function DependencyArrows({ dayToPixel }: DependencyArrowsProps) {
     rowIndex * ROW_HEIGHT + barVerticalPadding + BAR_HEIGHT / 2;
 
   /**
-   * Build a rounded-corner Z-shaped path from (sx, sy) to (tx, ty) via a midX elbow.
-   * When sy === ty (same row), draws a straight horizontal line.
+   * Build a rounded-corner path from (sx, sy) to (tx, ty).
+   * Uses a Z-shaped elbow when there is enough horizontal room, or an
+   * S-shaped route (right → down → left → down → right) when the
+   * destination is too close to or behind the source.
    */
   const buildArrowPath = (sx: number, sy: number, tx: number, ty: number): string => {
-    const midX = sx + 12;
-    // Same row — straight line
-    if (sy === ty) {
+    const ext = 12; // horizontal extension from source end / before destination start
+    const minGap = ext * 2; // minimum horizontal gap for a clean Z-path
+
+    // Same row, destination ahead — straight line
+    if (sy === ty && tx >= sx + minGap) {
       return `M ${sx} ${sy} L ${tx} ${ty}`;
     }
-    const dy = ty - sy;
-    const absDy = Math.abs(dy);
-    const dirY = dy > 0 ? 1 : -1;
-    // Corner radius, clamped to avoid overshooting
-    const r = Math.min(10, absDy / 2, Math.abs(midX - sx) / 2, Math.abs(tx - midX) / 2);
+
+    // Enough horizontal room — normal Z-shaped path
+    if (tx >= sx + minGap) {
+      const midX = sx + ext;
+      const dy = ty - sy;
+      const absDy = Math.abs(dy);
+      const dirY = dy > 0 ? 1 : -1;
+      const r = Math.min(10, absDy / 2, Math.abs(midX - sx) / 2, Math.abs(tx - midX) / 2);
+      return [
+        `M ${sx} ${sy}`,
+        `L ${midX - r} ${sy}`,
+        `Q ${midX} ${sy} ${midX} ${sy + r * dirY}`,
+        `L ${midX} ${ty - r * dirY}`,
+        `Q ${midX} ${ty} ${midX + r} ${ty}`,
+        `L ${tx} ${ty}`,
+      ].join(' ');
+    }
+
+    // S-shaped path: right → down → left → down → right (enters destination from left)
+    const rightX = sx + ext;
+    const leftX = tx - ext;
+    // When on the same row, route above; otherwise use the midpoint
+    const midY = sy === ty ? sy - ROW_HEIGHT * 0.6 : (sy + ty) / 2;
+
+    const dirY1 = midY > sy ? 1 : -1;
+    const dirY2 = ty > midY ? 1 : -1;
+    const absDy1 = Math.abs(midY - sy);
+    const absDy2 = Math.abs(ty - midY);
+    const hSpan = Math.abs(rightX - leftX);
+    const r = Math.min(10, absDy1 / 2, absDy2 / 2, ext / 2, hSpan / 2);
+
     return [
       `M ${sx} ${sy}`,
-      `L ${midX - r} ${sy}`,
-      `Q ${midX} ${sy} ${midX} ${sy + r * dirY}`,
-      `L ${midX} ${ty - r * dirY}`,
-      `Q ${midX} ${ty} ${midX + r} ${ty}`,
+      `L ${rightX - r} ${sy}`,
+      `Q ${rightX} ${sy} ${rightX} ${sy + r * dirY1}`,
+      `L ${rightX} ${midY - r * dirY1}`,
+      `Q ${rightX} ${midY} ${rightX - r} ${midY}`,
+      `L ${leftX + r} ${midY}`,
+      `Q ${leftX} ${midY} ${leftX} ${midY + r * dirY2}`,
+      `L ${leftX} ${ty - r * dirY2}`,
+      `Q ${leftX} ${ty} ${leftX + r} ${ty}`,
       `L ${tx} ${ty}`,
     ].join(' ');
   };
