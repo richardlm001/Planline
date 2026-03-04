@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { propagate, getTaskEnd } from '../scheduler';
+import { propagate, getTaskEnd, getTaskLastDay } from '../scheduler';
 import type { Task, Dependency } from '../types';
 
 function makeTask(id: string, start: number, duration: number): Task {
@@ -27,8 +27,8 @@ describe('scheduler - propagate', () => {
     ];
     const result = expectOk(propagate(tasks, deps));
     expect(result.starts.get('A')).toBe(0);
-    expect(result.starts.get('B')).toBe(3);
-    expect(result.starts.get('C')).toBe(5);
+    expect(result.starts.get('B')).toBe(2);
+    expect(result.starts.get('C')).toBe(3);
   });
 
   it('resize A shifts B and C', () => {
@@ -38,8 +38,8 @@ describe('scheduler - propagate', () => {
       { id: 'd2', fromTaskId: 'B', toTaskId: 'C' },
     ];
     const result = expectOk(propagate(tasks, deps));
-    expect(result.starts.get('B')).toBe(5);
-    expect(result.starts.get('C')).toBe(7);
+    expect(result.starts.get('B')).toBe(4);
+    expect(result.starts.get('C')).toBe(5);
   });
 
   it('move A shifts downstream', () => {
@@ -50,8 +50,8 @@ describe('scheduler - propagate', () => {
     ];
     const result = expectOk(propagate(tasks, deps));
     expect(result.starts.get('A')).toBe(10);
-    expect(result.starts.get('B')).toBe(13);
-    expect(result.starts.get('C')).toBe(15);
+    expect(result.starts.get('B')).toBe(12);
+    expect(result.starts.get('C')).toBe(13);
   });
 
   it('multiple predecessors — D depends on A and X', () => {
@@ -61,7 +61,7 @@ describe('scheduler - propagate', () => {
       { id: 'd2', fromTaskId: 'X', toTaskId: 'D' },
     ];
     const result = expectOk(propagate(tasks, deps));
-    expect(result.starts.get('D')).toBe(7);
+    expect(result.starts.get('D')).toBe(6);
   });
 
   it('no dependencies on a task — unconnected task stays put', () => {
@@ -120,5 +120,48 @@ describe('scheduler - cycle detection', () => {
 describe('getTaskEnd', () => {
   it('returns start + duration', () => {
     expect(getTaskEnd(5, 3)).toBe(8);
+  });
+});
+
+describe('getTaskLastDay', () => {
+  it('returns last occupied day for multi-day task', () => {
+    expect(getTaskLastDay(5, 3)).toBe(7);
+  });
+
+  it('returns same day for 1-day task', () => {
+    expect(getTaskLastDay(5, 1)).toBe(5);
+  });
+
+  it('returns start for 0-duration task', () => {
+    expect(getTaskLastDay(5, 0)).toBe(5);
+  });
+});
+
+describe('same-day dependencies', () => {
+  it('two 1-day tasks with dependency can share the same start day', () => {
+    const tasks = [makeTask('A', 5, 1), makeTask('B', 5, 1)];
+    const deps: Dependency[] = [{ id: 'd1', fromTaskId: 'A', toTaskId: 'B' }];
+    const result = expectOk(propagate(tasks, deps));
+    expect(result.starts.get('A')).toBe(5);
+    expect(result.starts.get('B')).toBe(5);
+  });
+
+  it('chain of 1-day tasks all start on the same day', () => {
+    const tasks = [makeTask('A', 0, 1), makeTask('B', 0, 1), makeTask('C', 0, 1)];
+    const deps: Dependency[] = [
+      { id: 'd1', fromTaskId: 'A', toTaskId: 'B' },
+      { id: 'd2', fromTaskId: 'B', toTaskId: 'C' },
+    ];
+    const result = expectOk(propagate(tasks, deps));
+    expect(result.starts.get('A')).toBe(0);
+    expect(result.starts.get('B')).toBe(0);
+    expect(result.starts.get('C')).toBe(0);
+  });
+
+  it('2-day predecessor pushes successor to its last day', () => {
+    const tasks = [makeTask('A', 0, 2), makeTask('B', 0, 1)];
+    const deps: Dependency[] = [{ id: 'd1', fromTaskId: 'A', toTaskId: 'B' }];
+    const result = expectOk(propagate(tasks, deps));
+    expect(result.starts.get('B')).toBe(1);
   });
 });

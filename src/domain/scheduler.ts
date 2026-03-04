@@ -9,6 +9,11 @@ export function getTaskEnd(start: number, duration: number): number {
   return start + duration;
 }
 
+/** Returns the last day index a task occupies (inclusive). A 1-day task on day 5 returns 5. */
+export function getTaskLastDay(start: number, duration: number): number {
+  return start + Math.max(duration - 1, 0);
+}
+
 /**
  * Given tasks and dependencies, compute the effective startDayIndex for each
  * task after Finish-to-Start propagation. Detects cycles and returns an error.
@@ -91,9 +96,9 @@ export function propagate(tasks: Task[], dependencies: Dependency[]): ScheduleRe
     for (const predId of preds) {
       const predStart = starts.get(predId)!;
       const predTask = taskMap.get(predId)!;
-      const predEnd = getTaskEnd(predStart, predTask.durationDays);
-      if (predEnd > effectiveStart) {
-        effectiveStart = predEnd;
+      const predLastDay = getTaskLastDay(predStart, predTask.durationDays);
+      if (predLastDay > effectiveStart) {
+        effectiveStart = predLastDay;
       }
     }
 
