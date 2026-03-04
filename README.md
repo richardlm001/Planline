@@ -14,6 +14,9 @@ Drag and resize tasks on a clean timeline, link finish-to-start dependencies, an
 
 </div>
 
+<img width="2084" height="1275" alt="screenshot" src="https://github.com/user-attachments/assets/a40173f6-b94b-410c-b1fd-f23c3f8cd141" />
+
+
 ---
 
 ## Why Planline?
@@ -45,7 +48,7 @@ Most project planning tools are bloated, cloud-dependent, and need an account to
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/planline.git
+git clone https://github.com/richardlm001/Planline.git
 cd planline
 npm install
 npm run dev
