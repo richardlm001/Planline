@@ -11,7 +11,7 @@ describe('Weekend Shading', () => {
       { dayIndex: 2, label: '8', sublabel: 'Mon', isWeekend: false, isToday: false, daysSpan: 1 },
     ];
 
-    const { container } = render(<TimelineHeader columns={columns} columnWidth={40} />);
+    const { container } = render(<TimelineHeader columns={columns} columnWidth={40} viewMode="day" />);
     const divs = container.querySelectorAll('[class*="bg-gray-50"]');
     // Saturday and Sunday should have the weekend class
     expect(divs.length).toBe(2);

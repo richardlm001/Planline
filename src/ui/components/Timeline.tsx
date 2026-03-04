@@ -84,10 +84,22 @@ export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: Timel
       for (let i = 0; i < visibleDays; i++) {
         const dayIndex = startDayIndex + i;
         const date = dayIndexToDate(dayIndex);
+        // Adapt labels to column width
+        let label: string;
+        let sublabel: string | undefined;
+        if (columnWidth >= 80) {
+          label = format(date, 'd');
+          sublabel = format(date, 'EEE');
+        } else if (columnWidth >= 30) {
+          label = format(date, 'd');
+          sublabel = format(date, 'EEEEE');
+        } else {
+          label = format(date, 'd');
+        }
         cols.push({
           dayIndex,
-          label: format(date, 'd'),
-          sublabel: format(date, 'EEE'),
+          label,
+          sublabel,
           isWeekend: isWeekend(date),
           isToday: dayIndex === today,
           daysSpan: 1,
@@ -104,9 +116,18 @@ export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: Timel
       while (dateToDayIndex(d) < dateToDayIndex(startDate) + totalDays) {
         const weekEnd = endOfWeek(d, { weekStartsOn: 1 });
         const dayIdx = dateToDayIndex(d);
+        // Adapt label to column width
+        let label: string;
+        if (columnWidth >= 60) {
+          label = `${format(d, 'MMM d')}–${format(weekEnd, 'd')}`;
+        } else if (columnWidth >= 35) {
+          label = format(d, 'MMM d');
+        } else {
+          label = format(d, 'M/d');
+        }
         cols.push({
           dayIndex: dayIdx,
-          label: `${format(d, 'MMM d')}–${format(weekEnd, 'd')}`,
+          label,
           isWeekend: false,
           isToday: today >= dayIdx && today <= dateToDayIndex(weekEnd),
           daysSpan: 7,
@@ -126,9 +147,18 @@ export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: Timel
         const monthEnd = endOfMonth(d);
         const dayIdx = dateToDayIndex(d);
         const span = differenceInCalendarDays(monthEnd, d) + 1;
+        // Adapt label to column width
+        let label: string;
+        if (columnWidth >= 80) {
+          label = format(d, 'MMM yyyy');
+        } else if (columnWidth >= 45) {
+          label = format(d, 'MMM yy');
+        } else {
+          label = format(d, 'MMM');
+        }
         cols.push({
           dayIndex: dayIdx,
-          label: format(d, 'MMM yyyy'),
+          label,
           isWeekend: false,
           isToday: today >= dayIdx && today < dayIdx + span,
           daysSpan: span,
@@ -138,7 +168,7 @@ export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: Timel
       }
       return cols;
     }
-  }, [today, zoomLevel, visibleDays]);
+  }, [today, zoomLevel, visibleDays, columnWidth]);
 
   // For day mode, rangeStartDayIndex is first column's dayIndex.
   // For week/month, same — the first column's dayIndex is the start.
@@ -195,7 +225,7 @@ export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: Timel
 
   return (
     <div style={{ width: totalWidth, minHeight: '100%' }} className="relative">
-      <TimelineHeader columns={columns} columnWidth={columnWidth} />
+      <TimelineHeader columns={columns} columnWidth={columnWidth} viewMode={zoomLevel} />
       <div className="relative" style={{ marginTop: 0 }} onClick={handleCanvasClick}>
         {/* Grid lines */}
         {columns.map((col, i) => (

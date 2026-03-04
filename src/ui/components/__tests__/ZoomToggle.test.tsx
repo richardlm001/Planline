@@ -82,4 +82,43 @@ describe('ZoomToggle', () => {
     expect(slider.min).toBe('0');
     expect(slider.max).toBe(String(MAX_ZOOM_PRESET_INDEX));
   });
+
+  it('clicking zoom-in button decreases preset index', () => {
+    useProjectStore.setState({ zoomPresetIndex: 3, zoomLevel: 'day' });
+    render(<ZoomToggle />);
+    fireEvent.click(screen.getByTestId('zoom-in-button'));
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(2);
+  });
+
+  it('clicking zoom-out button increases preset index', () => {
+    render(<ZoomToggle />);
+    fireEvent.click(screen.getByTestId('zoom-out-button'));
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(DEFAULT_ZOOM_PRESET_INDEX + 1);
+  });
+
+  it('zoom-in button is disabled at preset index 0', () => {
+    useProjectStore.setState({ zoomPresetIndex: 0, zoomLevel: 'day' });
+    render(<ZoomToggle />);
+    expect(screen.getByTestId('zoom-in-button')).toBeDisabled();
+  });
+
+  it('zoom-out button is disabled at max preset index', () => {
+    useProjectStore.setState({ zoomPresetIndex: MAX_ZOOM_PRESET_INDEX, zoomLevel: 'month' });
+    render(<ZoomToggle />);
+    expect(screen.getByTestId('zoom-out-button')).toBeDisabled();
+  });
+
+  it('zoom-in button does nothing when already at index 0', () => {
+    useProjectStore.setState({ zoomPresetIndex: 0, zoomLevel: 'day' });
+    render(<ZoomToggle />);
+    fireEvent.click(screen.getByTestId('zoom-in-button'));
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(0);
+  });
+
+  it('zoom-out button does nothing when already at max', () => {
+    useProjectStore.setState({ zoomPresetIndex: MAX_ZOOM_PRESET_INDEX, zoomLevel: 'month' });
+    render(<ZoomToggle />);
+    fireEvent.click(screen.getByTestId('zoom-out-button'));
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(MAX_ZOOM_PRESET_INDEX);
+  });
 });

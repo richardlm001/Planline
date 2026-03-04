@@ -9,6 +9,8 @@ const shortcuts = [
   { keys: ['Tab'], label: 'Add dependent' },
   { keys: ['F2'], label: 'Rename' },
   { keys: ['Del'], label: 'Delete' },
+  { keys: ['⌘', '+'], label: 'Zoom in' },
+  { keys: ['⌘', '−'], label: 'Zoom out' },
 ] as const;
 
 function Kbd({ children }: { children: React.ReactNode }) {
