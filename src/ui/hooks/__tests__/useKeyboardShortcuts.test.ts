@@ -4,6 +4,7 @@ import 'fake-indexeddb/auto';
 import { useProjectStore } from '../../../store/useProjectStore';
 import { renderHook } from '@testing-library/react';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { MAX_ZOOM_PRESET_INDEX } from '../../constants';
 
 function fireKey(key: string, opts?: Partial<KeyboardEventInit>) {
   window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...opts }));
@@ -307,6 +308,43 @@ describe('useKeyboardShortcuts', () => {
       // Task 'a' should be deleted but dependency (between b and c) should remain
       expect(state.tasks.find((t) => t.id === 'a')).toBeUndefined();
       expect(state.dependencies).toHaveLength(1);
+    });
+  });
+
+  describe('Cmd+/- zoom shortcuts', () => {
+    it('Cmd+= zooms in (decrements presetIndex)', () => {
+      useProjectStore.setState({ zoomPresetIndex: 5, zoomLevel: 'week' });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('=', { metaKey: true }));
+      expect(useProjectStore.getState().zoomPresetIndex).toBe(4);
+    });
+
+    it('Cmd+- zooms out (increments presetIndex)', () => {
+      useProjectStore.setState({ zoomPresetIndex: 5, zoomLevel: 'week' });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('-', { metaKey: true }));
+      expect(useProjectStore.getState().zoomPresetIndex).toBe(6);
+    });
+
+    it('Cmd+= at minimum preset stays at 0', () => {
+      useProjectStore.setState({ zoomPresetIndex: 0, zoomLevel: 'day' });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('=', { metaKey: true }));
+      expect(useProjectStore.getState().zoomPresetIndex).toBe(0);
+    });
+
+    it('Cmd+- at maximum preset stays at max', () => {
+      useProjectStore.setState({ zoomPresetIndex: MAX_ZOOM_PRESET_INDEX, zoomLevel: 'month' });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('-', { metaKey: true }));
+      expect(useProjectStore.getState().zoomPresetIndex).toBe(MAX_ZOOM_PRESET_INDEX);
+    });
+
+    it('Ctrl+= also zooms in (for non-Mac)', () => {
+      useProjectStore.setState({ zoomPresetIndex: 3, zoomLevel: 'day' });
+      renderHook(() => useKeyboardShortcuts());
+      act(() => fireKey('=', { ctrlKey: true }));
+      expect(useProjectStore.getState().zoomPresetIndex).toBe(2);
     });
   });
 });

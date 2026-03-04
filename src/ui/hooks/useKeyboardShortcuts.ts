@@ -21,6 +21,8 @@ export function useKeyboardShortcuts() {
   const addDependency = useProjectStore((s) => s.addDependency);
   const setEditingTaskId = useProjectStore((s) => s.setEditingTaskId);
   const setEditingGroupId = useProjectStore((s) => s.setEditingGroupId);
+  const zoomPresetIndex = useProjectStore((s) => s.zoomPresetIndex);
+  const setZoomPresetIndex = useProjectStore((s) => s.setZoomPresetIndex);
 
   const collapsedGroupIds = useMemo(
     () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
@@ -75,6 +77,18 @@ export function useKeyboardShortcuts() {
         } else {
           clearSelection();
         }
+        return;
+      }
+
+      // Cmd/Ctrl +/- to zoom in/out (works even when input is focused)
+      if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
+        e.preventDefault();
+        setZoomPresetIndex(zoomPresetIndex - 1);
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === '-') {
+        e.preventDefault();
+        setZoomPresetIndex(zoomPresetIndex + 1);
         return;
       }
 
@@ -268,6 +282,8 @@ export function useKeyboardShortcuts() {
       addDependency,
       setEditingTaskId,
       setEditingGroupId,
+      zoomPresetIndex,
+      setZoomPresetIndex,
     ]
   );
 
