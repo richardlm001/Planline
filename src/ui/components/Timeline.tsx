@@ -5,7 +5,7 @@ import { useProjectStore } from '../../store/useProjectStore';
 import { TimelineHeader } from './TimelineHeader';
 import { TimelineBody } from './TimelineBody';
 import { LinkingLine } from './LinkingLine';
-import { ZOOM_CONFIGS, HEADER_HEIGHT, TOOLBAR_HEIGHT, STATUS_BAR_HEIGHT, getVisibleDays } from '../constants';
+import { ZOOM_PRESETS, HEADER_HEIGHT, TOOLBAR_HEIGHT, STATUS_BAR_HEIGHT, getVisibleDays } from '../constants';
 
 function useTodayIndex(): number {
   const [today, setToday] = useState(() => todayDayIndex());
@@ -48,8 +48,9 @@ export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: Timel
   const internalRef = useRef<HTMLDivElement>(null);
   const scrollRef = scrollRefProp ?? internalRef;
   const zoomLevel = useProjectStore((s) => s.zoomLevel);
+  const zoomPresetIndex = useProjectStore((s) => s.zoomPresetIndex);
   const clearSelection = useProjectStore((s) => s.clearSelection);
-  const zoomConfig = ZOOM_CONFIGS[zoomLevel];
+  const zoomConfig = ZOOM_PRESETS[zoomPresetIndex];
   const columnWidth = zoomConfig.columnWidth;
 
   const today = useTodayIndex();
@@ -70,8 +71,8 @@ export function Timeline({ scrollRef: scrollRefProp, sidebarWidth = 250 }: Timel
   }, []);
 
   const visibleDays = useMemo(
-    () => getVisibleDays(zoomLevel, containerWidth),
-    [zoomLevel, containerWidth]
+    () => getVisibleDays(zoomPresetIndex, containerWidth),
+    [zoomPresetIndex, containerWidth]
   );
 
   // Generate columns based on zoom level

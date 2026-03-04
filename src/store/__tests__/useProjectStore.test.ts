@@ -308,6 +308,28 @@ describe('useProjectStore', () => {
     expect(useProjectStore.getState().zoomLevel).toBe('day');
   });
 
+  it('setZoomPresetIndex updates both presetIndex and derived zoomLevel', () => {
+    useProjectStore.getState().setZoomPresetIndex(0);
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(0);
+    expect(useProjectStore.getState().zoomLevel).toBe('day');
+
+    useProjectStore.getState().setZoomPresetIndex(5);
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(5);
+    expect(useProjectStore.getState().zoomLevel).toBe('week');
+
+    useProjectStore.getState().setZoomPresetIndex(8);
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(8);
+    expect(useProjectStore.getState().zoomLevel).toBe('month');
+  });
+
+  it('setZoomPresetIndex clamps out-of-range values', () => {
+    useProjectStore.getState().setZoomPresetIndex(-1);
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(0);
+
+    useProjectStore.getState().setZoomPresetIndex(999);
+    expect(useProjectStore.getState().zoomPresetIndex).toBe(9);
+  });
+
   it('setDragOverride publishes live start/duration and clearDragOverride removes it', () => {
     const { setDragOverride, clearDragOverride } = useProjectStore.getState();
 

@@ -20,6 +20,7 @@ export function DebugModal({ onClose }: DebugModalProps) {
   const dependencies = useProjectStore((s) => s.dependencies);
   const groups = useProjectStore((s) => s.groups);
   const zoomLevel = useProjectStore((s) => s.zoomLevel);
+  const zoomPresetIndex = useProjectStore((s) => s.zoomPresetIndex);
   const scheduleError = useProjectStore((s) => s.scheduleError);
   const selectedTaskIds = useProjectStore((s) => s.selectedTaskIds);
 
@@ -134,7 +135,7 @@ export function DebugModal({ onClose }: DebugModalProps) {
               <span>Groups</span>
               <span className="font-mono" data-testid="debug-group-count">{groups.length}</span>
               <span>Zoom level</span>
-              <span className="font-mono">{zoomLevel}</span>
+              <span className="font-mono">{zoomLevel} (preset {zoomPresetIndex})</span>
               <span>Scheduler</span>
               <span className="font-mono">{scheduleError ? `Error: ${scheduleError}` : 'OK'}</span>
               <span>Selected</span>

@@ -4,6 +4,7 @@ import type { Task, Dependency, Group, Project } from '../domain/types';
 import { propagate } from '../domain/scheduler';
 import type { ScheduleResult } from '../domain/scheduler';
 import { DEFAULTS, COLOR_PALETTE, todayDayIndex } from '../domain/constants';
+import { ZOOM_PRESETS, DEFAULT_ZOOM_PRESET_INDEX } from '../ui/constants';
 import type { ZoomLevel } from '../ui/constants';
 import * as repo from '../db/repository';
 
@@ -28,6 +29,7 @@ interface ProjectState {
   editingGroupId: string | null;
   linkingFromTaskId: string | null;
   zoomLevel: ZoomLevel;
+  zoomPresetIndex: number;
   lastSavedAt: Date | null;
   isLoaded: boolean;
   hydrationError: string | null;
@@ -57,6 +59,7 @@ interface ProjectState {
   setEditingGroupId: (id: string | null) => void;
   setLinkingFromTaskId: (id: string | null) => void;
   setZoomLevel: (level: ZoomLevel) => void;
+  setZoomPresetIndex: (index: number) => void;
   setDragOverride: (taskId: string, start: number, durationDays: number) => void;
   clearDragOverride: (taskId: string) => void;
   dismissError: () => void;
@@ -99,6 +102,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   editingGroupId: null,
   linkingFromTaskId: null,
   zoomLevel: 'day' as ZoomLevel,
+  zoomPresetIndex: DEFAULT_ZOOM_PRESET_INDEX,
   lastSavedAt: null,
   isLoaded: false,
   hydrationError: null,
@@ -498,7 +502,16 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   },
 
   setZoomLevel: (level: ZoomLevel) => {
-    set({ zoomLevel: level });
+    // Find the first preset matching this view mode (standard sub-level)
+    const idx = ZOOM_PRESETS.findIndex(p => p.viewMode === level);
+    const presetIndex = idx >= 0 ? idx : DEFAULT_ZOOM_PRESET_INDEX;
+    set({ zoomLevel: level, zoomPresetIndex: presetIndex });
+  },
+
+  setZoomPresetIndex: (index: number) => {
+    const clamped = Math.max(0, Math.min(index, ZOOM_PRESETS.length - 1));
+    const preset = ZOOM_PRESETS[clamped];
+    set({ zoomPresetIndex: clamped, zoomLevel: preset.viewMode });
   },
 
   setDragOverride: (taskId: string, start: number, durationDays: number) => {
