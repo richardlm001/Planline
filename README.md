@@ -48,7 +48,7 @@ Most project planning tools are bloated, cloud-dependent, and need an account to
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/planline.git
+git clone https://github.com/richardlm001/Planline.git
 cd planline
 npm install
 npm run dev
