@@ -388,21 +388,33 @@ describe('useProjectStore', () => {
     expect(task.startDayIndex).toBe(todayIndex);
   });
 
-  it('addTask inherits startDayIndex from the last task by sort order', async () => {
+  it('addTask inherits startDayIndex from the last task when appending', async () => {
     await useProjectStore.getState().addTask({ name: 'First', startDayIndex: 20 });
     await useProjectStore.getState().addTask({ name: 'Second', startDayIndex: 50 });
 
     const third = await useProjectStore.getState().addTask({ name: 'Third' });
-    // Should inherit startDayIndex from 'Second' (highest sortOrder)
+    // Should inherit startDayIndex from 'Second' (immediate predecessor by sortOrder)
     expect(third.startDayIndex).toBe(50);
   });
 
-  it('addTask uses computedStart of the last task when scheduler adjusts it', async () => {
+  it('addTask inherits startDayIndex from its immediate predecessor when inserted in the middle', async () => {
+    await useProjectStore.getState().addTask({ name: 'First', startDayIndex: 10, sortOrder: 0 });
+    await useProjectStore.getState().addTask({ name: 'Second', startDayIndex: 30, sortOrder: 1 });
+    await useProjectStore.getState().addTask({ name: 'Third', startDayIndex: 60, sortOrder: 2 });
+
+    // Insert between First and Second (sortOrder 0.5)
+    const inserted = await useProjectStore.getState().addTask({ name: 'Inserted', sortOrder: 0.5 });
+    // Should inherit from First (sortOrder 0), not Third (sortOrder 2)
+    expect(inserted.startDayIndex).toBe(10);
+  });
+
+  it('addTask uses computedStart of the predecessor when scheduler adjusts it', async () => {
     const taskA = await useProjectStore.getState().addTask({ name: 'A', startDayIndex: 0, durationDays: 5 });
     const taskB = await useProjectStore.getState().addTask({ name: 'B', startDayIndex: 0, durationDays: 3 });
     // B depends on A → scheduler pushes B to day 4 (A's last day = 0+5-1=4)
     await useProjectStore.getState().addDependency(taskA.id, taskB.id);
 
+    // Appending at the end → predecessor is B (highest sortOrder)
     const taskC = await useProjectStore.getState().addTask({ name: 'C' });
     // Should inherit B's computed start (4), not its stored start (0)
     const computedStartB = useProjectStore.getState().computedStarts.get(taskB.id);

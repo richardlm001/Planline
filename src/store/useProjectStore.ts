@@ -160,13 +160,25 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     const maxSortOrder = state.tasks.reduce((max, t) => Math.max(max, t.sortOrder), -1);
     const colorIndex = state.tasks.length % COLOR_PALETTE.length;
 
-    // Use the start day of the last task (by sort order) if one exists, otherwise default to today
+    // Determine the effective sort order for the new task
+    const effectiveSortOrder = partial?.sortOrder ?? maxSortOrder + 1;
+
+    // Find the immediate predecessor: the task with the highest sortOrder below the new task's position
     let defaultStartDayIndex = todayDayIndex();
     if (state.tasks.length > 0) {
-      const lastTask = state.tasks.reduce((prev, curr) =>
-        curr.sortOrder > prev.sortOrder ? curr : prev
+      let predecessor: Task | undefined;
+      for (const t of state.tasks) {
+        if (t.sortOrder < effectiveSortOrder) {
+          if (!predecessor || t.sortOrder > predecessor.sortOrder) {
+            predecessor = t;
+          }
+        }
+      }
+      // If no predecessor found (inserting at the very top), use the task with the lowest sortOrder
+      const referenceTask = predecessor ?? state.tasks.reduce((prev, curr) =>
+        curr.sortOrder < prev.sortOrder ? curr : prev
       );
-      defaultStartDayIndex = state.computedStarts.get(lastTask.id) ?? lastTask.startDayIndex;
+      defaultStartDayIndex = state.computedStarts.get(referenceTask.id) ?? referenceTask.startDayIndex;
     }
 
     const task: Task = {
